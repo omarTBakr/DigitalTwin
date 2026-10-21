@@ -33,20 +33,19 @@ def article_links(html: str) -> list[str]:
 
 
 class MediumListingPage:
-    """A tag or author page: scroll until enough article links are visible."""
+    """A tag or author page: scroll down with the mouse wheel until enough article links are visible."""
 
-    def __init__(self, browser: Browser, *, scroll_pause_s: float, max_scrolls: int):
+    def __init__(self, browser: Browser, *, max_scrolls: int):
         self.browser = browser
-        self.scroll_pause_s = scroll_pause_s
-        self.max_scrolls = max_scrolls
+        self.max_scrolls = max_scrolls  # wheel steps, each a few hundred pixels plus a pause
 
     def collect(self, url: str, limit: int) -> list[str]:
         links = article_links(self.browser.open(url))
         for _ in range(self.max_scrolls):
             if len(links) >= limit:
                 break
-            grew = self.browser.scroll_to_bottom(self.scroll_pause_s)
+            moved = self.browser.scroll_down()
             links = article_links(self.browser.page_source)
-            if not grew:
+            if not moved:  # reached the bottom and nothing more loaded
                 break
         return links[:limit]

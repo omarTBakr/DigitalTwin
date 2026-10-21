@@ -1,4 +1,3 @@
-import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import ClassVar
@@ -47,13 +46,26 @@ class MediumExtractor(BaseExtractor[MediumSettings]):
 
     provider: ClassVar[str] = "medium"
 
+    def _browser(self) -> Browser:
+        s = self.settings
+        return Browser(
+            source=self.provider,
+            headless=s.headless,
+            page_load_timeout_s=s.page_load_timeout_s,
+            binary_path=s.browser_binary,
+            user_data_dir=s.user_data_dir,
+            profile_directory=s.profile_directory,
+            delay_s=(s.action_delay_min_s, s.action_delay_max_s),
+        )
+
     @contextmanager
     def session(self):
         s = self.settings
         self.counts = self.context.topic_counts()
         self.known = {doc_id: set(topics) for doc_id, topics in self.context.existing_topics.items()}
-        with Browser(source=self.provider, headless=s.headless, page_load_timeout_s=s.page_load_timeout_s) as browser:
-            self.listing = MediumListingPage(browser, scroll_pause_s=s.scroll_pause_s, max_scrolls=s.max_scrolls)
+        with self._browser() as browser:
+            self.browser = browser
+            self.listing = MediumListingPage(browser, max_scrolls=s.max_scrolls)
             self.articles = MediumArticlePage(browser)
             yield
 
@@ -84,7 +96,6 @@ class MediumExtractor(BaseExtractor[MediumSettings]):
                 self.record_skipped(url, "already stored for these topics")
                 continue  # don't re-download
 
-            time.sleep(self.settings.request_delay_s)
             loaded = self._load(url)
             if loaded is None:
                 continue
@@ -167,10 +178,9 @@ class MediumExtractor(BaseExtractor[MediumSettings]):
         if offline or not self.sources:
             return self.health(True, f"{len(self.sources)} Medium sources (browser check skipped)")
         probe = self.sources[0].typed_spec.listing_url
-        s = self.settings
         try:
-            with Browser(source=self.provider, headless=s.headless, page_load_timeout_s=s.page_load_timeout_s) as b:
-                found = MediumListingPage(b, scroll_pause_s=s.scroll_pause_s, max_scrolls=0).collect(probe, limit=50)
+            with self._browser() as b:
+                found = MediumListingPage(b, max_scrolls=0).collect(probe, limit=50)
         except SourceError as exc:
             return self.health(False, str(exc), probe=probe)
         return self.health(bool(found), f"{len(self.sources)} sources; {probe}: {len(found)} article links")

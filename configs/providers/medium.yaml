@@ -1,11 +1,17 @@
 # Medium crawler tuning (Selenium), shared by every medium_tag / medium_author source.
-# If Medium shows a bot challenge, set headless: false and run again.
+# Browses at a human pace: random pauses between actions, mouse-wheel scrolling in steps.
+# If Medium shows a bot challenge: run headed (headless: false) and click the check in the window.
 
 limit_per_topic: 100
-skip_member_only: true
+skip_member_only: true          # even when logged in: member-only stories are not redistributed
 use_fallback: true
-headless: true
+headless: false
+# browser_binary: /opt/brave.com/brave-beta/brave   # another Chromium-based browser; unset = Google Chrome
+# Dedicated crawler profile (Chrome 136+ refuses automation of your everyday ~/.config/google-chrome).
+# Sign in once in a NORMAL window:  google-chrome --user-data-dir=$HOME/.config/digital-twin-chrome
+# Close that window before a run; your everyday Chrome can stay open.
+user_data_dir: ~/.config/digital-twin-chrome
 page_load_timeout_s: 30
-scroll_pause_s: 2.0
-max_scrolls: 30
-request_delay_s: 3.0
+max_scrolls: 80                 # mouse-wheel steps per listing page
+action_delay_min_s: 2.0         # random pause between page loads and scroll steps
+action_delay_max_s: 5.0
