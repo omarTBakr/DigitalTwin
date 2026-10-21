@@ -94,6 +94,6 @@ class MongoRawDataStore(RawDataStore):
     @staticmethod
     def _to_document(raw: dict) -> RawDocument:
         try:
-            return RawDocument.model_validate({**raw, "id": raw["_id"]})
+            return RawDocument.model_validate({"id": raw["_id"], **{k: v for k, v in raw.items() if k != "_id"}})
         except (ValidationError, KeyError) as exc:
             raise StoreCorruptedError(str(exc), location=f"{COLLECTION}/{raw.get('_id')}") from exc

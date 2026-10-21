@@ -69,17 +69,17 @@ class MongoRegistryStore(RegistryStore):
         return result.upserted_id is not None
 
     def users(self) -> list[User]:
-        return [self._model(User, {**raw, "id": raw["_id"]}, USERS) for raw in self._run(lambda: list(self.users_col.find()))]
+        return [self._model(User, self._with_id(raw), USERS) for raw in self._run(lambda: list(self.users_col.find()))]
 
     def sources(self, source_ids: Iterable[str] | None = None) -> list[Source]:
         query = {} if source_ids is None else {"_id": {"$in": list(source_ids)}}
         raws = self._run(lambda: list(self.sources_col.find(query)))
-        return [self._model(Source, {**raw, "id": raw["_id"]}, SOURCES) for raw in raws]
+        return [self._model(Source, self._with_id(raw), SOURCES) for raw in raws]
 
     def subscriptions(self, user_id: str | None = None) -> list[Subscription]:
         query = {"user_id": user_id} if user_id else {}
         raws = self._run(lambda: list(self.subscriptions_col.find(query)))
-        return [self._model(Subscription, raw, SUBSCRIPTIONS) for raw in raws]
+        return [self._model(Subscription, {k: v for k, v in raw.items() if k != "_id"}, SUBSCRIPTIONS) for raw in raws]
 
     def record_state(self, source_id: str, state: SourceState) -> None:
         self._run(lambda: self.sources_col.update_one({"_id": source_id}, {"$set": {"state": state.model_dump()}}))
@@ -90,6 +90,11 @@ class MongoRegistryStore(RegistryStore):
             return operation()
         except PyMongoError as exc:
             raise RegistryError(f"registry operation failed: {exc}") from exc
+
+    @staticmethod
+    def _with_id(raw: dict) -> dict:
+        """Mongo's `_id` becomes the model's `id` (models reject unknown keys like `_id`)."""
+        return {"id": raw["_id"], **{k: v for k, v in raw.items() if k != "_id"}}
 
     @staticmethod
     def _model(model, raw: dict, collection: str):

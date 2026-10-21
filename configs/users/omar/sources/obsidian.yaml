@@ -7,13 +7,68 @@ sources:
   include:
   - '*.md'
   skip_hidden: true
+  include_hidden:                           # hidden paths kept anyway
+  - 'myLibrary/_Revision Decks/.src/*'      # your revision decks (the PDFs there are renders of these)
   exclude:
   - Templates/*
   - copilot/*
   - copilot-conversations/*
   - '*.excalidraw.md'
+  - 'images/Vodafone*'                      # job-application test: keep out of the dataset
   min_chars: 40
+  pdf_include:                              # third-party PDFs (slides, lecture notes) → origin external
+  - 'images/*.pdf'
+  pdf_origin: external
+  pdf_max_mb: 100
   topic_rules:
+  # ---- revision decks (no frontmatter tags; matched by deck name)
+  - {glob: '*/.src/Agentic AI*', topic: ai-agents}
+  - {glob: '*/.src/Build AI Agents*', topic: ai-agents}
+  - {glob: '*/.src/LangChain*', topic: ai-agents}
+  - {glob: '*/.src/Algorithms*', topic: algorithms}
+  - {glob: '*/.src/Data Structures*', topic: algorithms}
+  - {glob: '*/.src/LeetCode*', topic: algorithms}
+  - {glob: '*/.src/*Linear Algebra*', topic: math}
+  - {glob: '*/.src/Matrix Calculus*', topic: math}
+  - {glob: '*/.src/Discrete Math*', topic: math}
+  - {glob: '*/.src/Optimization*', topic: math}
+  - {glob: '*/.src/*Statistic*', topic: statistics-probability}
+  - {glob: '*/.src/Biostatistics*', topic: statistics-probability}
+  - {glob: '*/.src/Probability*', topic: statistics-probability}
+  - {glob: '*/.src/AWS*', topic: cloud-devops}
+  - {glob: '*/.src/C++*', topic: cpp}
+  - {glob: '*/.src/Deep Learning*', topic: deep-learning}
+  - {glob: '*/.src/*Computer Vision*', topic: computer-vision}
+  - {glob: '*/.src/*NLP*', topic: nlp}
+  - {glob: '*/.src/Stanford CS224N*', topic: nlp}
+  - {glob: '*/.src/Transformers*', topic: transformers}
+  - {glob: '*/.src/Learn Hugging Face*', topic: transformers}
+  - {glob: '*/.src/Deployment Of Deep Learning*', topic: mlops}
+  - {glob: '*/.src/MLOps*', topic: mlops}
+  - {glob: '*/.src/Design Patterns*', topic: software-engineering}
+  - {glob: '*/.src/Head First OOAD*', topic: software-engineering}
+  - {glob: '*/.src/Software Architecture*', topic: software-engineering}
+  - {glob: '*/.src/Fine-tuning*', topic: fine-tuning}
+  - {glob: '*/.src/Fine-tuning*', topic: reinforcement-learning}
+  - {glob: '*/.src/Reinforcement Learning*', topic: reinforcement-learning}
+  - {glob: '*/.src/Generative AI*', topic: llms}
+  - {glob: '*/.src/Machine Learning*', topic: machine-learning}
+  - {glob: '*/.src/Python*', topic: python}
+  - {glob: '*/.src/Fluent Python*', topic: python}
+  - {glob: '*/.src/PyTorch*', topic: pytorch}
+  - {glob: '*/.src/SQL*', topic: data-engineering}
+  - {glob: '*/.src/Vector Database*', topic: rag}
+  # ---- third-party PDFs in images/
+  - {glob: 'images/*Recommender*', topic: machine-learning}
+  - {glob: 'images/*Probability*', topic: statistics-probability}
+  - {glob: 'images/*Statistics*', topic: statistics-probability}
+  - {glob: 'images/CS109*', topic: statistics-probability}
+  - {glob: 'images/*Hallucinations*', topic: llms}
+  - {glob: 'images/cs224n*', topic: nlp}
+  - {glob: 'images/cs224n*', topic: llms}
+  - {glob: 'images/cs224n*dpo*', topic: fine-tuning}
+  - {glob: 'images/*MIT6_006*', topic: algorithms}
+  # ---- notes by folder
   - glob: myLibrary/Courses/machine learning/*
     topic: machine-learning
   - glob: myLibrary/Books/Machine Learning/*

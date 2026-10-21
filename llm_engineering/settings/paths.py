@@ -23,7 +23,6 @@ ENV_FILE = PROJECT_ROOT / ".env"
 # ---- data
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_SNAPSHOT_DIR = DATA_DIR / "raw"  # DVC-versioned JSONL snapshots of the raw data store
-EXPORTS_DIR = DATA_DIR / "exports"  # manual downloads, e.g. the LinkedIn export
 MANIFESTS_DIR = DATA_DIR / "manifests"
 SOURCE_HEALTH_FILE = MANIFESTS_DIR / "source_health.json"
 

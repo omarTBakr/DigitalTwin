@@ -102,14 +102,18 @@ class BaseExtractor[S: BaseProviderSettings](ABC):
         query: str,
         rank: int | None = None,
         topics: set[str] | list[str] = (),
+        owned: bool = True,
         **fields: Any,
     ) -> RawDocument:
-        """Build a RawDocument with provider, ownership, source link, hash and provenance filled consistently."""
+        """Build a RawDocument with provider, ownership, source link, hash and provenance filled consistently.
+
+        `owned=False` marks third-party content found in a user's own source (e.g. a PDF in their vault):
+        it gets no owner_id, so it never counts as the user's writing."""
         return RawDocument(
             id=id,
             provider=self.provider,
             source=kind,
-            owner_id=source.owner_id,
+            owner_id=source.owner_id if owned else None,
             source_ids=[source.id],
             origin=origin,
             content=content,
