@@ -10,6 +10,7 @@ dependencies = [
     "beautifulsoup4>=4.15.0",
     "commit>=0.1.0",
     "dvc>=3.67.1",
+    "feedparser>=6.0.14",
     "fonttools>=4.67.0",
     "html2text>=2025.4.15",
     "httpx>=0.28.1",

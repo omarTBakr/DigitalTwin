@@ -1,10 +1,12 @@
-# Medium crawler tuning (Selenium), shared by every medium_tag / medium_author source.
-# Browses at a human pace: random pauses between actions, mouse-wheel scrolling in steps.
-# If Medium shows a bot challenge: run headed (headless: false) and click the check in the window.
+# Medium via its official RSS feeds (full text of free posts; member-only posts are skipped).
+# medium_author sources: the author's feed, no browser.
+# medium_tag sources: the browser only discovers the tag's top links (human pace: pauses, wheel scrolling);
+#   each article's text comes from its author's/publication's feed (latest ~10 posts per feed).
 
 limit_per_topic: 100
 skip_member_only: true          # even when logged in: member-only stories are not redistributed
-use_fallback: true
+feed_delay_s: 3.0               # between feed requests
+feed_max_retries: 3
 headless: false
 # browser_binary: /opt/brave.com/brave-beta/brave   # another Chromium-based browser; unset = Google Chrome
 # Dedicated crawler profile (Chrome 136+ refuses automation of your everyday ~/.config/google-chrome).

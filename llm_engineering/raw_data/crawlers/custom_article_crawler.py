@@ -18,8 +18,8 @@ CRAWLER_NAME = "custom_article_crawler"
 class CustomArticleCrawler:
     """Generic article crawler: plain HTTP fetch (LangChain AsyncHtmlLoader) + Html2TextTransformer.
 
-    Works for most static blogs/docs. Used as a fallback when a site-specific crawler fails, and by the
-    `articles` provider. No JavaScript, so pages that render client-side may come back thin.
+    Works for most static blogs/docs; used by the `articles` provider. No JavaScript, so pages that render
+    client-side may come back thin.
     """
 
     def __init__(self, *, source: str, min_chars: int = 200):
