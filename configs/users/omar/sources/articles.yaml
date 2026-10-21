@@ -1,0 +1,15 @@
+# Single web articles (blogs, docs). Same URL declared by another user = same source (normalized URL).
+
+sources:
+  - {type: article, url: 'https://lilianweng.github.io/posts/2023-06-23-agent/', topics: [ai-agents, llms]}
+  - {type: article, url: 'https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/', topics: [llms]}
+  - {type: article, url: 'https://lilianweng.github.io/posts/2018-06-24-attention/', topics: [transformers, nlp, deep-learning]}
+  - {type: article, url: 'https://jalammar.github.io/illustrated-transformer/', topics: [transformers, nlp]}
+  - {type: article, url: 'https://jalammar.github.io/illustrated-bert/', topics: [transformers, nlp]}
+  - {type: article, url: 'https://huyenchip.com/2023/05/02/rlhf.html', topics: [fine-tuning, llms, reinforcement-learning]}
+  - {type: article, url: 'https://huyenchip.com/2023/04/11/llm-engineering.html', topics: [llmops, llms]}
+  - {type: article, url: 'https://karpathy.github.io/2015/05/21/rnn-effectiveness/', topics: [deep-learning, nlp]}
+  - {type: article, url: 'https://karpathy.github.io/2019/04/25/recipe/', topics: [deep-learning]}
+  - {type: article, url: 'https://www.anthropic.com/engineering/building-effective-agents', topics: [ai-agents, llms]}
+  - {type: article, url: 'https://ml-ops.org/content/mlops-principles', topics: [mlops]}
+  - {type: article, url: 'https://distill.pub/2016/augmented-rnns/', topics: [deep-learning, nlp]}

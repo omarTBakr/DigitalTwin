@@ -1,0 +1,57 @@
+# Medium sources: each tag = its top ("recommended") articles; each author = their latest articles.
+# A source shared with another user is stored and crawled once (canonical key, e.g. medium:tag:rag).
+
+sources:
+  - {type: medium_tag, tag: llm, topics: [llms]}
+  - {type: medium_tag, tag: large-language-models, topics: [llms]}
+  - {type: medium_tag, tag: generative-ai, topics: [llms]}
+  - {type: medium_tag, tag: mlops, topics: [mlops]}
+  - {type: medium_tag, tag: machine-learning-operations, topics: [mlops]}
+  - {type: medium_tag, tag: llmops, topics: [llmops]}
+  - {type: medium_tag, tag: llm-evaluation, topics: [llmops]}
+  - {type: medium_tag, tag: rag, topics: [rag]}
+  - {type: medium_tag, tag: retrieval-augmented-generation, topics: [rag]}
+  - {type: medium_tag, tag: vector-database, topics: [rag]}
+  - {type: medium_tag, tag: machine-learning, topics: [machine-learning]}
+  - {type: medium_tag, tag: deep-learning, topics: [deep-learning]}
+  - {type: medium_tag, tag: neural-networks, topics: [deep-learning]}
+  - {type: medium_tag, tag: computer-vision, topics: [computer-vision]}
+  - {type: medium_tag, tag: object-detection, topics: [computer-vision]}
+  - {type: medium_tag, tag: robotics, topics: [robotics]}
+  - {type: medium_tag, tag: ros, topics: [robotics]}
+  - {type: medium_tag, tag: pandas, topics: [pandas]}
+  - {type: medium_tag, tag: numpy, topics: [numpy]}
+  - {type: medium_tag, tag: pytorch, topics: [pytorch]}
+  - {type: medium_tag, tag: scikit-learn, topics: [sklearn]}
+  - {type: medium_tag, tag: nlp, topics: [nlp]}
+  - {type: medium_tag, tag: natural-language-processing, topics: [nlp]}
+  - {type: medium_tag, tag: transformers, topics: [transformers]}
+  - {type: medium_tag, tag: attention-mechanism, topics: [transformers]}
+  - {type: medium_tag, tag: ai-agents, topics: [ai-agents]}
+  - {type: medium_tag, tag: agentic-ai, topics: [ai-agents]}
+  - {type: medium_tag, tag: langgraph, topics: [ai-agents]}
+  - {type: medium_tag, tag: fine-tuning, topics: [fine-tuning]}
+  - {type: medium_tag, tag: lora, topics: [fine-tuning]}
+  - {type: medium_tag, tag: reinforcement-learning, topics: [reinforcement-learning]}
+  - {type: medium_tag, tag: data-engineering, topics: [data-engineering]}
+  - {type: medium_tag, tag: etl, topics: [data-engineering]}
+  - {type: medium_tag, tag: python, topics: [python]}
+  - {type: medium_tag, tag: software-engineering, topics: [software-engineering]}
+  - {type: medium_tag, tag: system-design, topics: [software-engineering]}
+  - {type: medium_tag, tag: design-patterns, topics: [software-engineering]}
+  - {type: medium_tag, tag: algorithms, topics: [algorithms]}
+  - {type: medium_tag, tag: data-structures, topics: [algorithms]}
+  - {type: medium_tag, tag: mathematics, topics: [math]}
+  - {type: medium_tag, tag: linear-algebra, topics: [math]}
+  - {type: medium_tag, tag: statistics, topics: [statistics-probability]}
+  - {type: medium_tag, tag: probability, topics: [statistics-probability]}
+  - {type: medium_tag, tag: devops, topics: [cloud-devops]}
+  - {type: medium_tag, tag: aws, topics: [cloud-devops]}
+  - {type: medium_tag, tag: docker, topics: [cloud-devops]}
+
+  - {type: medium_author, handle: '@mlabonne', topics: [llms, fine-tuning]}
+  - {type: medium_author, handle: '@karpathy', topics: [llms, deep-learning]}
+  - {type: medium_author, handle: '@pauliusztin', topics: [mlops, llmops]}
+  - {type: medium_author, handle: '@cobusgreyling', topics: [rag, ai-agents]}
+  - {type: medium_author, handle: '@sh-tsang', topics: [computer-vision]}
+  - {type: medium_author, handle: '@jrodthoughts', topics: [transformers]}

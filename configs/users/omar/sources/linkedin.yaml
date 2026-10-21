@@ -1,0 +1,11 @@
+# Your official LinkedIn data export: LinkedIn → Settings → Data privacy → Get a copy of your data,
+# then unzip it into export_dir.
+
+sources:
+- type: linkedin_export
+  export_dir: data/exports/linkedin/omar
+  include:
+  - posts
+  - articles
+  - comments
+  min_chars: 40

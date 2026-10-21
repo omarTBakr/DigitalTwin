@@ -1,0 +1,134 @@
+# Your Obsidian vault(s). Patterns are fnmatch globs on vault-relative paths ('*' crosses folders).
+# Topics come from note tags (topics.yaml obsidian_tags) plus these folder rules.
+
+sources:
+- type: obsidian
+  vault_path: /home/omar/Desktop/workDiaries
+  include:
+  - '*.md'
+  skip_hidden: true
+  exclude:
+  - Templates/*
+  - copilot/*
+  - copilot-conversations/*
+  - '*.excalidraw.md'
+  min_chars: 40
+  topic_rules:
+  - glob: myLibrary/Courses/machine learning/*
+    topic: machine-learning
+  - glob: myLibrary/Books/Machine Learning/*
+    topic: machine-learning
+  - glob: myLibrary/Courses/deep learning Live/*
+    topic: deep-learning
+  - glob: myLibrary/Courses/deep learning Michigan/*
+    topic: deep-learning
+  - glob: myLibrary/Courses/deep learning Michigan/*
+    topic: computer-vision
+  - glob: myLibrary/Courses/Deep Learning For Computer Vision/*
+    topic: computer-vision
+  - glob: myLibrary/Courses/Vision Papers/*
+    topic: computer-vision
+  - glob: myLibrary/Courses/Transfomer In Computer Vision/*
+    topic: computer-vision
+  - glob: myLibrary/Courses/Transfomer In Computer Vision/*
+    topic: transformers
+  - glob: myLibrary/*computer vision*
+    topic: computer-vision
+  - glob: myLibrary/Courses/NLP/*
+    topic: nlp
+  - glob: myLibrary/Books/NLP Books/*
+    topic: nlp
+  - glob: myLibrary/Courses/MLOps/*
+    topic: mlops
+  - glob: myLibrary/Courses/Deployment Of Deep Learning Models/*
+    topic: mlops
+  - glob: myLibrary/Courses/Reinforcement Learning/*
+    topic: reinforcement-learning
+  - glob: myLibrary/Courses/Vector Database/*
+    topic: rag
+  - glob: myLibrary/Courses/Software Requirements Engineering using Large Language Models/*
+    topic: llms
+  - glob: myLibrary/Courses/SQL/*
+    topic: data-engineering
+  - glob: THE PROJECT/*
+    topic: robotics
+  - glob: myLibrary/Courses/AWS/*
+    topic: cloud-devops
+  - glob: run open web ui.md
+    topic: developer-tools
+  - glob: myLibrary/Courses/programming coursers/Python Courses/*
+    topic: python
+  - glob: myLibrary/Books/Programming Books/Python Books/*
+    topic: python
+  - glob: myLibrary/programming tricks/python/*
+    topic: python
+  - glob: myLibrary/Courses/programming coursers/Useful YouTube Videos/*
+    topic: python
+  - glob: myLibrary/Courses/programming coursers/PyTorch/*
+    topic: pytorch
+  - glob: myLibrary/Courses/programming coursers/C++ courses/*
+    topic: cpp
+  - glob: myLibrary/Books/Programming Books/C++  Books/*
+    topic: cpp
+  - glob: myLibrary/Books/Programming Books/*
+    topic: software-engineering
+  - glob: Books To read/Programming/*
+    topic: software-engineering
+  - glob: myLibrary/Courses/design patterns/*
+    topic: software-engineering
+  - glob: myLibrary/Courses/Software Architecture/*
+    topic: software-engineering
+  - glob: myLibrary/Courses/Software Requirements Engineering using Large Language Models/*
+    topic: software-engineering
+  - glob: myLibrary/programming tricks/*
+    topic: software-engineering
+  - glob: myLibrary/Courses/Algorithms/*
+    topic: algorithms
+  - glob: myLibrary/Courses/Data Structure live/*
+    topic: algorithms
+  - glob: myLibrary/leetcode/*
+    topic: algorithms
+  - glob: missing class MIT/*
+    topic: developer-tools
+  - glob: Latex Journey/*
+    topic: developer-tools
+  - glob: myLibrary/Courses/Math courses/*
+    topic: math
+  - glob: myLibrary/Books/Math Books/*
+    topic: math
+  - glob: myLibrary/Courses/Math courses/probability*
+    topic: statistics-probability
+  - glob: myLibrary/Courses/Math courses/statistics*
+    topic: statistics-probability
+  - glob: myLibrary/Courses/Math courses/Statistics*
+    topic: statistics-probability
+  - glob: myLibrary/Courses/Math courses/SPPH*
+    topic: statistics-probability
+  - glob: myLibrary/Books/Math Books/Porbability/*
+    topic: statistics-probability
+  - glob: behavioral interview.md
+    topic: career
+  - glob: Master IN Germany.md
+    topic: career
+  - glob: online work.md
+    topic: career
+  - glob: resources for the CV.md
+    topic: career
+  - glob: myLibrary/Courses/Interviews Course Udemy/*
+    topic: career
+  - glob: myLibrary/FlyRank Internship/*
+    topic: career
+  - glob: IELTS/*
+    topic: english-ielts
+  - glob: Agriculture/*
+    topic: agriculture
+  - glob: myLibrary/Thinking Skills/*
+    topic: personal-development
+  - glob: myLibrary/lost skills for your professional career/*
+    topic: personal-development
+  - glob: Books To read/self improvement/*
+    topic: personal-development
+  - glob: Books To read/Finance/*
+    topic: general-reading
+  - glob: Books To read/history/*
+    topic: general-reading

@@ -1,0 +1,11 @@
+# Medium crawler tuning (Selenium), shared by every medium_tag / medium_author source.
+# If Medium shows a bot challenge, set headless: false and run again.
+
+limit_per_topic: 100
+skip_member_only: true
+use_fallback: true
+headless: true
+page_load_timeout_s: 30
+scroll_pause_s: 2.0
+max_scrolls: 30
+request_delay_s: 3.0

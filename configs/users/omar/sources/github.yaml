@@ -1,0 +1,52 @@
+# Your GitHub account(s): READMEs, docs, Python and notebooks of every repo you own.
+
+sources:
+- type: github
+  username: omarTBakr
+  repos: []
+  exclude_repos:
+  - omarTBakr.github.io
+  include_forks: false
+  include:
+  - README*
+  - '*.md'
+  - '*.py'
+  - '*.ipynb'
+  exclude:
+  - '*node_modules/*'
+  - '*venv/*'
+  - '*site-packages/*'
+  - '*/migrations/*'
+  - '*_pb2.py'
+  skip_hidden: true
+  max_file_kb: 1024
+  min_chars: 40
+  topic_rules:
+  - repo: omarTBakr
+    topic: career
+  - repo: flyrank-ml-internship
+    topic: career
+  - repo: legal-review-agent
+    topic: ai-agents
+  - repo: legal-review-agent
+    topic: llms
+  - repo: notebookllm-minus
+    topic: llmops
+  - repo: ML-Deep-Dive
+    topic: machine-learning
+  - repo: ML-Projects
+    topic: sklearn
+  - repo: Tech-job-market-analysis-using-PostgreSQL
+    topic: data-engineering
+  - repo: Tech-job-market-analysis-using-PostgreSQL
+    topic: pandas
+  - repo: Variational-Autoencoder-VAE-
+    topic: deep-learning
+  - repo: Variational-Autoencoder-VAE-
+    topic: pytorch
+  - repo: Volleyball-Group-Activity-Recognition
+    topic: deep-learning
+  - repo: Volleyball-Group-Activity-Recognition
+    topic: pytorch
+  - repo: EducationalProjects
+    topic: python

@@ -1,0 +1,3 @@
+# GitHub crawler tuning. Optional GITHUB_TOKEN in .env: 5000 req/hour instead of 60.
+
+request_delay_s: 0.5

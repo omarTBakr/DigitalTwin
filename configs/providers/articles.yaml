@@ -1,0 +1,4 @@
+# Generic article crawler (LangChain AsyncHtmlLoader + Html2TextTransformer; plain HTTP, no JavaScript).
+
+request_delay_s: 1.0
+min_chars: 200

@@ -1,0 +1,141 @@
+# Single source of truth for topics. Source configs reference these keys;
+# an unknown key fails validation.
+#
+# medium_tags: Medium tag slugs (as they appear in RSS <category>) that map to the topic.
+# obsidian_tags: vault frontmatter/inline tag prefixes that map to the topic
+#                ("nlp" matches "nlp", "nlp/course", "nlp/sequence-models", ...).
+
+topics:
+  # ---------------- AI / ML ----------------
+  llms:
+    description: Large language models — architectures, prompting, evaluation, inference
+    medium_tags: [llm, llms, large-language-models, gpt, chatgpt, generative-ai, genai, prompt-engineering]
+    obsidian_tags: [ml/llm, ml/llm-apis, nlp/pretraining, nlp/generation, llm, genai]
+  mlops:
+    description: Operating ML systems — pipelines, CI/CD, monitoring, feature stores
+    medium_tags: [mlops, ml-ops, machine-learning-operations, model-deployment, ml-engineering]
+    obsidian_tags: [mlops, ml/deployment, ml/systems, ml/training-systems, ml/tooling]
+  llmops:
+    description: Operating LLM systems — serving, observability, evaluation, guardrails
+    medium_tags: [llmops, llm-ops, llm-evaluation, llm-observability, llm-inference]
+    obsidian_tags: [llmops]
+  rag:
+    description: Retrieval-augmented generation, vector search, chunking, reranking
+    medium_tags: [rag, retrieval-augmented-generation, retrieval-augmented, vector-database, vector-search, embeddings, semantic-search]
+    obsidian_tags: [rag, nlp/rag, vector-database, data/vector]
+  machine-learning:
+    description: Classical ML — algorithms, feature engineering, model evaluation
+    medium_tags: [machine-learning, ml, supervised-learning, unsupervised-learning, feature-engineering]
+    obsidian_tags:
+      [ml/course, ml/training, ml/algorithms, ml/fundamentals, ml/evaluation, ml/classification,
+       ml/gradient-boosting, ml/regularization, ml/optimization, ml/hub, machine-learning]
+  deep-learning:
+    description: Neural networks, optimization, training dynamics
+    medium_tags: [deep-learning, neural-networks, neural-network]
+    obsidian_tags: [dl, deep-learning, ml/architectures, multimodal]
+  computer-vision:
+    description: Image/video understanding — detection, segmentation, vision transformers
+    medium_tags: [computer-vision, image-classification, object-detection, image-segmentation, cnn, convolutional-neural-net]
+    obsidian_tags: [cv, computer-vision, vision]
+  robotics:
+    description: Robotics, drones, ROS, perception and control
+    medium_tags: [robotics, ros, robot, drones, autonomous-vehicles, embodied-ai]
+    obsidian_tags: [robotics, drones]
+  pandas:
+    description: Data manipulation with pandas
+    medium_tags: [pandas, pandas-dataframe, data-analysis]
+    obsidian_tags: [pandas, python/pandas]
+  numpy:
+    description: Numerical computing with NumPy
+    medium_tags: [numpy, numerical-computing]
+    obsidian_tags: [numpy, python/numpy]
+  pytorch:
+    description: PyTorch — modelling, training loops, tooling
+    medium_tags: [pytorch, torch]
+    obsidian_tags: [ml/pytorch, pytorch]
+  sklearn:
+    description: scikit-learn
+    medium_tags: [scikit-learn, sklearn, scikit]
+    obsidian_tags: [sklearn, scikit-learn]
+  nlp:
+    description: Natural language processing — tokenization, sequence models, text tasks
+    medium_tags: [nlp, natural-language-processing, text-classification, tokenization]
+    obsidian_tags: [nlp]
+  transformers:
+    description: The transformer architecture and its variants
+    medium_tags: [transformers, transformer, attention-mechanism, hugging-face, huggingface, bert]
+    obsidian_tags: [transformers, ml/transformers, nlp/transformers, ml/attention]
+  ai-agents:
+    description: Agents — tool use, planning, multi-agent systems, MCP, LangGraph
+    medium_tags: [ai-agents, ai-agent, agents, agentic-ai, langgraph, langchain, mcp, model-context-protocol, multi-agent-systems]
+    obsidian_tags: [agents, ai-agents, agentic, nlp/agents]
+  fine-tuning:
+    description: Fine-tuning and alignment — LoRA/PEFT, SFT, DPO, RLHF
+    medium_tags: [fine-tuning, finetuning, lora, peft, qlora, rlhf, dpo]
+    obsidian_tags: [fine-tuning, finetuning, ml/rlhf, ml/alignment, nlp/alignment]
+  reinforcement-learning:
+    description: Reinforcement learning — MDPs, policy gradients, Q-learning
+    medium_tags: [reinforcement-learning, deep-reinforcement-learning, rl, q-learning]
+    obsidian_tags: [rl, reinforcement-learning, ml/rlhf]
+  data-engineering:
+    description: Data pipelines, ETL, databases, SQL, warehouses, streaming
+    medium_tags: [data-engineering, etl, data-pipeline, apache-spark, apache-airflow, data-warehouse, sql, postgresql, database]
+    obsidian_tags: [data, data-engineering]
+
+  # ---------------- Software ----------------
+  python:
+    description: Python — language internals, stdlib, idioms, tooling
+    medium_tags: [python, python3, python-programming, fluent-python]
+    obsidian_tags: [python, software/python, software/stdlib, software/functions, software/modules, software/numbers]
+  cpp:
+    description: C++ programming
+    medium_tags: [cpp, c-plus-plus, cplusplus]
+    obsidian_tags: [cpp, c++, software/cpp]
+  software-engineering:
+    description: Design patterns, OOP/SOLID, software architecture, requirements
+    medium_tags: [software-engineering, design-patterns, software-architecture, object-oriented, solid-principles, clean-code, system-design]
+    obsidian_tags: [software/design-patterns, software/architecture, software/oop, software/solid, software/course, software/hub]
+  algorithms:
+    description: Data structures, algorithms, complexity, LeetCode patterns
+    medium_tags: [algorithms, data-structures, leetcode, dynamic-programming, coding-interviews]
+    obsidian_tags: [algorithms]
+  cloud-devops:
+    description: Cloud (AWS), Docker, deployment infrastructure
+    medium_tags: [aws, docker, devops, kubernetes, cloud-computing]
+    obsidian_tags: [infra, aws, docker]
+  developer-tools:
+    description: Shell, editors/Vim, Git, LaTeX and other everyday tooling
+    medium_tags: [linux, bash, shell, vim, git, latex, command-line]
+    obsidian_tags: [shell, vim, git, latex]
+
+  # ---------------- Math ----------------
+  math:
+    description: Linear algebra, matrix calculus, calculus, optimization, discrete math
+    medium_tags: [mathematics, math, linear-algebra, calculus, optimization]
+    obsidian_tags: [math, linear-algebra, matrix-calculus, optimization, discrete-math, books/strang]
+  statistics-probability:
+    description: Probability, statistics, hypothesis testing, biostatistics
+    medium_tags: [statistics, probability, data-science-statistics, hypothesis-testing, bayesian-statistics]
+    obsidian_tags: [stats, statistics, probability, cs109, spph400, spph500]
+
+  # ---------------- Personal ----------------
+  career:
+    description: Interviews, CV, applying to master's programs, freelancing
+    medium_tags: [career, careers, job-interview, interview, resume, career-advice]
+    obsidian_tags: [career, interview, cv]
+  english-ielts:
+    description: English language learning and IELTS preparation
+    medium_tags: [ielts, english-learning, english-language]
+    obsidian_tags: [ielts, english]
+  personal-development:
+    description: Thinking skills, self-improvement, professional soft skills
+    medium_tags: [self-improvement, personal-development, productivity, critical-thinking]
+    obsidian_tags: [thinking, self-improvement, soft-skills]
+  agriculture:
+    description: Agriculture economics and farm management
+    medium_tags: [agriculture, farming, agtech]
+    obsidian_tags: [agriculture]
+  general-reading:
+    description: Reading list outside tech — finance, history
+    medium_tags: [finance, personal-finance, history]
+    obsidian_tags: [finance, history, books/to-read]

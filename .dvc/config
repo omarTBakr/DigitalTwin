@@ -1,0 +1,5 @@
+[core]
+    remote = local
+    autostage = false
+['remote "local"']
+    url = /run/media/omar/My Passport1/dvc-remotes/DigitalTwin

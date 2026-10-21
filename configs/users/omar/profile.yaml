@@ -1,0 +1,7 @@
+# A user the twin is built for. `id` must match this folder's name; it links the user's own
+# documents (owner_id) and their subscriptions.
+
+id: omar
+name: Omar Ayman Bakr
+handles:
+  github: omarTBakr
