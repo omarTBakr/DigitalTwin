@@ -3,7 +3,7 @@
 
 sources:
 - type: obsidian
-  vault_path: /home/omar/Desktop/workDiaries
+  vault_path: ~/Desktop/workDiaries         # home-relative (~ is expanded); relative paths resolve against the repo
   include:
   - '*.md'
   skip_hidden: true
