@@ -1,0 +1,104 @@
+# DigitalTwin: Class Diagram Review
+
+| | |
+|---|---|
+| Reviewed | [`class_diagram_draft.md`](class_diagram_draft.md) (Draft v0.1, 17 Mermaid diagrams, 121 implemented and 235 planned classes) |
+| Result | [`class_diagram.md`](../class_diagrams/README.md) v1.0 (17 diagrams, 124 implemented and 198 planned classes). The draft is unchanged. |
+| Against | Code at `main` `4c40ca7` (read only, nothing run), [`requirements.md`](../requirements/requirements.md) v1.0, [`user_stories.md`](../user_stories/user_stories.md) |
+| Validation | Every diagram of [`class_diagram.md`](../class_diagrams/README.md) renders with mermaid-cli 11.x (npx cache, system Chrome via a puppeteer config): 17/17 OK |
+| Date | 2026-10-23 |
+
+Severity: **High** (wrong design or a Must requirement with no structural home), **Medium** (inaccurate, incomplete or a design weakness that will cost later), **Low** (detail, notation, readability).
+
+## Summary
+
+The draft is a strong base. Implemented classes are drawn with care: over 60 of them were checked member by member against the code (list in section 1) and no invented attribute or method was found on any implemented class. The problems are elsewhere:
+
+1. **Accuracy.** Three "helper modules" do not exist (`medium_helpers`, `github_support`, `obsidian_helpers`), constants are placed in the wrong module or shown as class attributes, keyword-only signatures are lost, and diagram 5 omits most of what the ETL steps actually depend on.
+2. **Coverage.** Every requirement the brief named has a class, but several Must requirements have a class with no path to the place where the rule must be enforced: exclusions never reach retrieval or dataset builds, consent never reaches source selection, deletions cannot reach models (datasets do not record their documents), per-user spend cannot be computed (cost entries have no user), and topic replacement (FR-ETL-013) cannot work without per-source topic attribution.
+3. **Design.** The planned packages contain two dependency cycles; owner isolation is enforced in four unrelated places, one of them in the wrong phase; ownership is checked by a read-then-write guard that races with UI writes; evaluators share a signature that RAG and benchmark evaluation cannot satisfy; and about a fifth of the planned classes are empty boxes (Mongo implementations, routers, purger adapters) or single-method wrappers.
+
+The final diagram fixes all of them. Planned classes went from 235 to 198 (53 names removed or merged, 16 new names, of which 6 fill real gaps).
+
+## 1. Classes checked against the code
+
+Checked member by member (attributes, types, defaults, method signatures, static and abstract markers, base classes, relationships): `Settings`, `MongoSettings`, `GitHubSettings` (both), `VersioningSettings`, `RawStoreSettings`, `YamlLoader`, `Topic`, `TopicsFile`, `TopicMatcher`, `User`, `Source`, `SourceState`, `Subscription`, `UserDeclaration`, `RegistryStore`, `MongoRegistryStore`, `RegistrySeeder`, `SeedStats`, `SourceSelector`, `keys`, `BaseSourceSpec` and its six specs, `RepoTopicRule`, `TopicRule`, `specs_registry`, `BaseExtractor`, `CrawlContext`, `CrawlReport`, `ItemOutcome`, `SourceHealth`, `Provider`, `provider_registry`, `MediumExtractor`, `MediumSettings`, `MediumFeedClient`, `FeedEntry`, `MediumListingPage`, `Browser`, `GitHubExtractor`, `GitHubClient`, `github_files`, `LinkedInExportExtractor`, `LinkedInExport`, `LinkedInItem`, `ObsidianExtractor`, `ObsidianVault`, `Note`, `CodeAwareObsidianLoader`, `PdfText`, `ArticlesExtractor`, `ArticlesSettings`, `CustomArticleCrawler`, `CrawledArticle`, `RawDocument`, `Provenance`, `RawDataStore`, `MongoRawDataStore`, `UpsertStats`, `RawDataSnapshotExporter`, `DvcRepo`, `GitRepo`, `run_command`, `get_client`/`get_database`, every exception class, every ETL step, `crawl_provider`, `record_states`, `zenml_helpers`, `html_report`, `digital_data_etl`, `tools.run`, `tools.validate_sources`.
+
+Verified correct (no change needed): inheritance and ABC markers everywhere, `BaseExtractor[S]` generic bound, `PROVIDER_WIDE_ERRORS`, all spec fields and defaults, `RegistryStore` and `RawDataStore` abstract methods, `$setOnInsert` / `$addToSet` / `$slice` semantics in the notes, the exception tree, step signatures and artifact names, and every gap statement in draft section 12.3. Findings A1 to A8 below are the exceptions.
+
+## 2. Findings
+
+### A. Accuracy against the code
+
+| # | Sev | Diagram | Issue | Fix applied |
+|---|---|---|---|---|
+| A1 | Medium | 3b, 3c | **Invented modules.** `medium_helpers`, `github_support` and `obsidian_helpers` do not exist. They merge functions from different files: `feed_url_for_article` is in `medium/feed_client.py`, `article_id`/`article_links` in `medium/listing_page.py`; `notebook_to_markdown` is in `github/notebook.py` while `_parse_retry_after` is a private function of `github/client.py`; `read_pdf` is in `obsidian/pdf_reader.py`, the markdown helpers in `obsidian/markdown.py`. | Replaced by the six real modules (`medium_feed_client`, `medium_listing_page`, `github_client_module`, `github_notebook`, `obsidian_markdown`, `obsidian_pdf_reader`) with their real constants (`MEDIUM`, `USER_AGENT`, `ARTICLE_PATH`, `NON_ARTICLE_PREFIXES`, `API`, `RAW`, `EMBED`, `WIKILINK`, `CODE_FENCE`, `PAGE_BREAK`) and dependencies. Implemented count 121 to 124. |
+| A2 | Medium | 3c | `SHARES_CSV` and `COMMENTS_CSV` are shown in `linkedin_parsers`; they are defined in `linkedin/export_files.py`. `linkedin_parsers` actually defines `HASHTAG` and `DATE_PREFIX`. | Moved to a note on `LinkedInExport`; `linkedin_parsers` shows its real patterns. |
+| A3 | Low | 4 | `MongoRawDataStore.COLLECTION`, `PROVENANCE_KEPT` and `RawDataSnapshotExporter.SNAPSHOT_EXCLUDE` are drawn as class-level (`$`) members. They are module constants. `REGISTRY_DIR` is missing. | Removed from the boxes; shown in notes. Notation rule added to "How to read". |
+| A4 | Medium | 2a | `MongoRegistryStore`'s module constants are missing, including `DECLARATION_FIELDS`, which contains `owner_id`. That tuple *is* the FR-REG-012 defect, so it belongs on the diagram. Also missing: `YamlLoader`'s `PROFILE_FILE`/`USER_SOURCES_DIR`, `STATUSES`, `Browser`'s `CHALLENGE_MARKERS`/`DEFAULT_PROFILE_DIRS`, the article crawler's `USER_AGENT`/`CRAWLER_NAME`, the vault's `FILE_KEYS`. | Added as notes. |
+| A5 | Low | 3a to 4, 11 | **Keyword-only parameters lost.** `health_check(*, offline=False)`, `make_document(*, ...)` (with `owned=True` default), `GitHubClient(*, source, token)`, `read_pdf(path, *, source)`, `run_command(..., *, ok_codes)`, and all exception constructors (`ConfigError(message, *, path)`, `SourceError(message, *, source)`). Constructors of `MediumFeedClient`, `MediumListingPage`, `Browser`, `LinkedInExport`, `ObsidianVault`, `CustomArticleCrawler`, `RateLimitError`, `ParseError`, `StoreCorruptedError` were missing. | Signatures corrected, constructors added, `*` notation documented. |
+| A6 | Low | 3b | `MediumExtractor.session()` and `GitHubExtractor.session()` are shown returning `Iterator`; they are `@contextmanager` generators, so callers get an `AbstractContextManager` (the base-class contract). | Shown as `session() AbstractContextManager «contextmanager»`. |
+| A7 | Low | 3a | `CrawlContext.matcher` is drawn as a dataclass field; it is set in `__post_init__` and cannot be passed in. | Marked "set in post_init". |
+| A8 | Medium | 5, 0 | **Missing dependencies.** `crawl_provider` builds `YamlLoader`, both stores through their factories, `CrawlContext` and `UpsertStats`; `version_raw_data` uses `DvcRepo`, `GitRepo`, `PROVIDERS` and the factories; `sync_registry`/`select_sources` use the registry factory; `tools.validate_sources` uses `Source.from_spec` and `CrawlContext`. The overview misses `registry ..> raw_store` (specs import `Origin` from `raw_data/documents/types.py`), `tools ..> registry`, `tools ..> settings` and `steps_etl ..> settings`. | All added. The `registry ..> raw_store` edge is noted as an inverted dependency (12.3 item 9). Also noted: `CodeAwareObsidianLoader` uses `strip_code_fences`. |
+| A9 | Low | 12.3 | Two code facts were missing from the mismatch list: `MediumFeedClient` and `GitHubClient` already send `DigitalTwinCrawler/0.1` (no contact URL) while the article crawler sends a Chrome UA; `.env.example` says the token is for private repos. | Added as 12.3 items 9 to 11. |
+
+### C. Coverage of Must requirements (P1 to P4)
+
+Every Must requirement of P1 to P4 that implies structure was checked for a class, attribute or method home and for a path to where it is enforced. The brief's list (change sets, tombstones, locks, cursors, ownership conflict, consent, quotas, cost ledger, style eligibility, taint flags, alias switch) all had a class in the draft. The gaps were in enforcement paths:
+
+| # | Sev | Diagram | Issue | Fix applied |
+|---|---|---|---|---|
+| C1 | High | 10a, 10b, 7, 8a | **Exclusions are never enforced** (FR-UI-006 Must, FR-PRV-006). `Exclusion` and `ExclusionService` exist, but nothing connects them to crawling, retrieval or dataset builds. `ForgetRule` duplicates `Exclusion`. | One `Exclusion` (document, source or glob; scopes crawl, retrieval, training) in `governance`, stored through planned `RegistryStore` methods. Enforced by `CrawlContext.exclusions` (crawl), vector deletion via `Purgeable` (retrieval) and `TrainingDataSelector` (training). `ForgetRule` removed; `tools_forget` writes an all-scope `Exclusion`. |
+| C2 | High | 10a, 2a | **Consent is not enforced** (FR-UI-010 Must: "a user with no Consent record has no source selected by any run"). The draft only links consent to login. | Planned note on `SourceSelector` and `SelectionResult.skipped_no_consent`; consent stored on the user record. |
+| C3 | High | 8a, 10b | **Taint tracking cannot work** (FR-PRV-005 Must). `TaintTracker.on_deleted(document_ids)` has no way to find models: `DatasetVersion` does not record which documents it contains. | `DatasetVersion.source_document_ids`, `DatasetStore.containing(ids)`, `ModelRegistry.trained_on(dataset_versions)`; `TaintTracker` holds both. |
+| C4 | Medium | 9 | **Per-user spend cannot be computed** (FR-UI-012 inference spend per day, FR-INF-008). `CostEntry` has no `user_id`, and `BudgetGuard.ensure` takes none. | `CostEntry.user_id`; `CostLedger.spent(..., user_id)`; `BudgetGuard.ensure(stage, estimate, user_id)` plus `charge(entry)`; `QuotaPolicy` reads the ledger. |
+| C5 | Medium | 4 | **FR-ETL-013 cannot be implemented as drawn.** `replace_derived_topics(source_id, doc_id, topics)` needs to know which topics each source contributed; `RawDocument` stores one merged list. | Planned `RawDocument.topics_by_source`. |
+| C6 | Medium | 2a, 3b, 3c | **Cursors store per-item maps** (`GitHubCursor.blob_shas`, `VaultCursor.note_hashes`) inside `SourceState`. That is about 1,190 and 1,017 entries per source document, duplicates `metadata.sha` / `content_hash` that FR-GH-005 already puts on documents, and is rewritten on every run. The abstract `SourceCursor` also cannot be deserialised by Pydantic. `FeedCursor` and `HttpCacheCursor` are the same shape. | Cursors hold source-level watermarks only; item fingerprints come from planned `RawDataStore.fingerprints(source_id)` into `CrawlContext.fingerprints` (the `existing_topics` pattern). `SourceCursor` is a discriminated union on `kind`. `FeedCursor` + `HttpCacheCursor` merged into `HttpCursor`. |
+| C7 | Medium | 8a, 8b | **DS-010 gate is in the wrong pipeline.** The requirement says the *training* pipeline refuses a small or low-quality dataset; the draft wires `DatasetQualityGate` only into `generate_datasets`. `FilterReport` is not kept with the version, so training cannot check the removal rate. | Gate used by `training.check_dataset`; `DatasetVersion.filter_report`. |
+| C8 | Medium | 5, 9 | **FR-OPS-006 alerting has no trigger.** `Alerter` exists but nothing reads run outcomes or `consecutive_failures`. | `record_run ..> Alerter`; `BackoffGate` reads `consecutive_failures`. |
+| C9 | Medium | 7, 8a, 8b | **Lineage incomplete** (FR-VER-004 Must: `data_md5` *and* git commit on every downstream artifact). Cleaned documents and datasets record only the md5, eval reports and the vector collection nothing. | `Lineage` value object (data_md5, snapshot commit, code commit, upstream inputs) on `CleanedDocument`, `DatasetVersion`, `ModelVersion`, `EvalReport` and `VectorStore.create_collection`. `RunRecord` composes `SnapshotRef` instead of copying its fields. |
+| C10 | Low | 10a | Quotas are admin-set per user (FR-UI-012) but `QuotaPolicy` holds them as fixed attributes. Credential revocation must disable dependent sources (FR-UI-005). | `QuotaPolicy` reads per-user quotas from the registry; `CredentialVault ..> RegistryStore`. |
+| C11 | Low | 6 | Webhook replay protection (FR-TRG-007) is an in-memory `seen_delivery_ids` set, lost on restart. | `TriggerEvent.delivery_id` and `TriggerEventStore.seen(delivery_id)`. |
+| C12 | Low | 8a | `PreferenceSample` lacks `origin` and `prompt_version` (FR-DS-002 "origin is recorded"). | Common `Sample` base (C13/D5). |
+| C13 | Low | 8b | FR-FT-006 cancels a job at `max_hours`/`max_usd`, but `ComputeBackend` has no way to poll a job. | `ComputeBackend.status(handle)`; backend holds `BudgetGuard`. |
+| C14 | Low | 10b | `DataExportService` misses datasets and model lineage (FR-PRV-001). | Dependencies added. |
+| C15 | Info | — | FR-OPS-003 (CI) is a Must with no class home; it is a workflow, not a class. No change. | — |
+
+### D. Design quality
+
+| # | Sev | Diagram | Issue | Fix applied |
+|---|---|---|---|---|
+| D1 | High | 0, 5, 6 | **Package cycle run_tracking and triggers.** `RunRecord.trigger` and `RunOptions.trigger` use `TriggerKind` (triggers), while triggers use `LockManager` and run records (run_tracking). | `TriggerKind` moved to run_tracking (diagram 5). Triggers depend on run tracking, never the reverse. |
+| D2 | High | 0, 9 | **Package cycle inference and llmops.** `Tracer.start(request: ChatRequest)` makes llmops depend on inference, which depends on llmops. The overview also puts the LLM client in llmops while diagram 9 puts it in inference, and datasets and evaluation depend on it. | New `llm` package (LLM clients, prompts) used by datasets, evaluation and inference. `Tracer.start(name, user_id)` takes plain values. Overview rewritten; verified acyclic. |
+| D3 | High | 2a | **Ownership check races** (FR-REG-012, RISK-13). `OwnershipGuard.check(existing, incoming)` reads then writes; with the UI (P4) two writers can both pass it. The draft also leaves the store's `$set owner_id` in place. | `OwnershipGuard` removed. `RegistryStore.upsert_source` enforces it with a conditional update and raises `OwnershipConflictError`. |
+| D4 | High | 7 to 10b | **Owner isolation has no single owner** (FR-REG-010, G5). It is spread over `VectorFilter.for_user`, `RawDataStore.find(owner_id)`, an unnamed dataset filter, and `OwnerIsolationCheck` (P4, while dataset isolation is P3). | `OwnerScope` in `governance` (P2) is the only read-side check: composed by `VectorFilter`, taken by `CleanedDocumentStore.find` and `TrainingDataSelector.select`, and `assert_all` in `training.check_dataset` (raises new `OwnerIsolationError`). Section 12.2 states who decides and who enforces ownership. |
+| D5 | Medium | 8b | **Evaluator signature breaks substitution (LSP).** `evaluate(model: ModelVersion, data: CuratedEvalSet)` does not fit `RagEvaluator` (evaluates retrieval with reference documents) or `BenchmarkRegressionEvaluator` (public benchmark). `RagEvaluator` (P2) extends an abstract class marked P3. | `evaluate(twin: TwinService, data: EvalSet)`; `EvalSet.kind` (model, rag, safety, benchmark); `EvalItem.reference_document_ids`. Evaluation types moved to P2. |
+| D6 | Medium | 8a | **Weak typing in the sample pipeline.** Generators, filters and the splitter use `list[BaseModel]`; the two sample classes duplicate six fields. | `Sample` base class; `InstructionSample` and `PreferenceSample` extend it. |
+| D7 | Medium | 8a | **Dataset admission rules are scattered**: `LicensePolicy`, `StyleEligibilityPolicy`, owner filter, tombstones, and (missing) exclusions. | `TrainingDataSelector` is the single gate; `LicensePolicy` merged into it; `StyleEligibilityPolicy` keeps computing `style_eligible`. |
+| D8 | Medium | 7, 8b, 9 | **Budget enforced in several places.** `HostedEmbedder.max_usd`, `CostEstimator`, `TrainingConfig.max_usd` and `BudgetGuard` overlap. | Every paid client holds `BudgetGuard`; per-run caps are inputs to it. `CostEstimator` merged into `LLMClient.estimate_cost_usd`. |
+| D9 | Medium | all planned | **Over-engineering: 235 planned classes**, many with no members. | Removed or merged 53: 7 member-less `Mongo*` boxes (the ABC names its collection; the convention is stated once), 6 empty routers (members of `ApiApp`), 6 `Purger` adapters plus their ABC (stores implement `Purgeable`), `TraceRetentionJob` (`Tracer.purge` with `PurgeScope.before`), `OrphanSourceHandler` and `ReconcileStats` (into `RegistryReconciler`/`SeedStats`), `TombstonePolicy` (`EnumerationResult.missing`), `CrawlMode` (`RunOptions.interactive`), `CollectionAliasManager` (`VectorStore.switch_alias`), `CleanerRegistry`+`ChunkerRegistry` (module `feature_strategies`, like `PROVIDERS`), `SecretMasker`+`RegexPiiMasker` (`RegexMasker` under `Masker`), single-implementation ABCs `QueryRewriter`, `Reranker`, `WebhookVerifier`, `TriggerRetryPolicy` (into `BackoffGate`), `ChangeSetStore` (into `RunRecordStore`), `NotePrivacyFilter` and `BylineExtractor` (methods of `ObsidianVault` and `CustomArticleCrawler`), `VectorPoint`, two-value `DatasetKind`. Result: 198 planned. |
+| D10 | Medium | 1, 3a | `CrawlerIdentity` is configuration (name, version, contact URL) but sits outside `Settings`, against the one-reader rule (FR-CFG-004). | `CrawlerSettings` (`CRAWLER_` prefix) on `Settings`, used by all three HTTP clients and `RobotsPolicy`. |
+| D11 | Low | 1 | `QdrantSettings` names the product, unlike `RawStoreSettings.backend`; planned settings do not show their env prefix. `LLMSettings` is P3 although the P2 base-model client needs it. | `VectorStoreSettings` with `backend`; every planned group shows its prefix; `LLMSettings` P2. |
+| D12 | Low | 8b | `DpoTrainer ..> SftTrainer : parent model` relates two classes for what is an instance relation (parent `ModelVersion`). `ModelVersion ..> ModelVersion` is a dependency where an association with multiplicity is meant. | Removed; `ModelVersion "0..*" --> "0..1" ModelVersion : parent_id`. |
+| D13 | Low | 8a | `StyleEligibilityPolicy.path_rules: list[TopicRule]` reuses a topic-rule model for an eligibility rule. | `dict[str, bool]` (glob to eligible). |
+| D14 | Low | phases | Phase markers inconsistent with dependants: `Role` P4 used by P2 `Principal`; `PiiMasker` P3 while secrets masking is P2; `EvalReport`/`MetricScore`/`CuratedEvalSet` P3 used by P2 RAG evaluation. | Corrected (Role P2, Masker P2, evaluation types P2). |
+| D15 | Low | 4 | `TopicMigrator` sat in diagram 1 (topics package) while it writes the raw store. | Moved to diagram 4 with `SchemaMigrator`. |
+
+### M. Mermaid validity and readability
+
+| # | Sev | Diagram | Issue | Fix applied |
+|---|---|---|---|---|
+| M1 | Info | all | The draft's 17 diagrams render (re-checked: 17/17). Stereotypes, generic `BaseExtractor~S~`, aliased labels (`ObsidianNote["Note"]`) and notes are valid. | — |
+| M2 | Low | 0 | The overview had no `llm` or `governance` packages and an inconsistent placement of the LLM client. | Rewritten; the graph is acyclic and the text says so. |
+| M3 | Low | 7, 9, 10a | Dense planned diagrams (30 to 33 classes plus refs). | 29, 29 and 18 classes after the merges; routers listed as members. |
+| M4 | Low | header | The draft's header row claimed validation without listing how; counts were hand-made. | Final counts are produced by a script (section 13), and the review records the validation command. |
+
+## 3. What did not change
+
+- The diagram set, numbering, notation and the rule that implemented class boxes show only what exists.
+- Every implemented class not named in section A.
+- The planned subsystems and their phases, except the corrections in D14.
+
+## 4. Validation
+
+Command (from the repo, offline, no global install): each Mermaid block of [`class_diagram.md`](../class_diagrams/README.md) was extracted and rendered with `~/.npm/_npx/<hash>/node_modules/.bin/mmdc -i dNN.mmd -o dNN.svg -p puppeteer.json`, where `puppeteer.json` points at `/usr/bin/google-chrome` with `--no-sandbox --headless=new`. Result: 17/17 diagrams rendered without error, and spot checks of the SVG text confirmed that keyword-only `*`, static `$` and `«contextmanager»` markers render as text, not as abstract or static styling.
