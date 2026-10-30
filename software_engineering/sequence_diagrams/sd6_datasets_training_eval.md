@@ -9,7 +9,7 @@
 | User stories | US-073, US-074, US-075, US-076, US-077, US-078, US-079, US-080, US-081, US-082, US-083 ([backlog](../user_stories/user_stories.md)) |
 | Use cases | [UC-18](../use_cases/05_datasets_training_eval.md#uc-18-generate-training-datasets), [UC-19](../use_cases/05_datasets_training_eval.md#uc-19-fine-tune-and-register-a-twin-model), [UC-20](../use_cases/05_datasets_training_eval.md#uc-20-evaluate-and-promote-a-model) |
 | Class diagrams | [7](../class_diagrams/07_feature_pipeline.md), [8a](../class_diagrams/08a_dataset_generation.md), [8b](../class_diagrams/08b_training_model_registry_and_evaluation.md), [9](../class_diagrams/09_llm_clients_inference_and_llmops.md), [10b](../class_diagrams/10b_governance_and_privacy_operations.md) |
-| draw.io | copy the ```mermaid block below → Arrange › Insert › Advanced › Mermaid |
+| draw.io | copy the ```mermaid block below → Arrange › Insert › Mermaid |
 
 
 DS-001..010, FT-001..006, EVAL-001..005, VER-004/005, PRV-004. `TrainingDataSelector` is the only gate for what enters a dataset, and `OwnerScope.assert_all` runs before any GPU time is spent.

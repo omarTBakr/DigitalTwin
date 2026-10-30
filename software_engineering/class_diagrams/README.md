@@ -26,6 +26,8 @@
 
 ## Diagram index
 
+The whole system on one page: [`system_class_diagram.mmd`](system_class_diagram.mmd), with the key classes of every subsystem in Mermaid namespaces and the relations that cross subsystems. It is raw Mermaid, ready to paste into draw.io. The diagrams below hold the full members.
+
 | # | Diagram | Subsystem | Use cases | Sequence diagrams |
 |---|---|---|---|---|
 | 0 | [Overview](00_overview.md) | Packages and their dependencies (acyclic) |  | [SD-0](../sequence_diagrams/sd0_end_to_end.md), [SD-1](../sequence_diagrams/sd1_etl_pipeline_run.md) |

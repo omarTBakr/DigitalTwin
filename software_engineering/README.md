@@ -7,6 +7,7 @@ The design of DigitalTwin as one connected set of documents: what the system mus
 | Baseline | `main` at `4c40ca7` (ETL stage built, P0; later stages planned) |
 | Status | v1.0 of every artifact, for owner approval. Open decisions are in [the overall review](reviews/overall_review.md#5-decisions-needed-from-the-owner-before-sprint-1-ends). |
 | Notation | All diagrams are Mermaid, one diagram per file, so each one can be pasted into draw.io ([see below](#working-with-drawio)) |
+| Checks | `make docs-check`: links resolve, every diagram renders, every story is in one use case, every cited requirement exists (`make docs-links` skips rendering) |
 
 ## How the artifacts connect
 
@@ -91,6 +92,8 @@ The full use case → stories → requirements → diagrams table is in [`use_ca
 |---|---|
 | [0 Overview](class_diagrams/00_overview.md) · [1 Settings and configuration](class_diagrams/01_settings_and_configuration.md) · [2a Registry core](class_diagrams/02a_registry_core.md) · [2b Source specs](class_diagrams/02b_source_specs.md) · [3a Extraction framework](class_diagrams/03a_extraction_framework.md) · [3b Medium and GitHub](class_diagrams/03b_providers_medium_and_github.md) · [3c LinkedIn, Obsidian and Articles](class_diagrams/03c_providers_linkedin_obsidian_and_articles.md) · [4 Raw storage and versioning](class_diagrams/04_raw_storage_and_versioning.md) · [5 Orchestration](class_diagrams/05_orchestration.md) · [11 Exceptions](class_diagrams/11_exceptions.md) | [6 Triggers and scheduling](class_diagrams/06_triggers_and_scheduling.md) · [7 Feature pipeline](class_diagrams/07_feature_pipeline.md) · [8a Dataset generation](class_diagrams/08a_dataset_generation.md) · [8b Training, registry, evaluation](class_diagrams/08b_training_model_registry_and_evaluation.md) · [9 LLM clients, inference, LLMOps](class_diagrams/09_llm_clients_inference_and_llmops.md) · [10a UI, API and auth](class_diagrams/10a_ui_api_and_authentication.md) · [10b Governance and privacy](class_diagrams/10b_governance_and_privacy_operations.md) |
 
+**Whole system on one diagram:** [`class_diagrams/system_class_diagram.mmd`](class_diagrams/system_class_diagram.mmd) holds the key classes of every subsystem (about 100, grouped by subsystem) and how they interact across subsystems. It is a raw Mermaid file: paste the whole file into draw.io. The numbered diagrams above have the full members.
+
 The design notes (patterns to keep, cross-cutting rules, code mismatches), the class counts and the planned class → requirement map are in [`class_diagrams/README.md`](class_diagrams/README.md#12-design-notes).
 
 ## Status at a glance
@@ -132,14 +135,14 @@ IDs are stable. New items get new IDs at the end of their group. Retired ones ar
 Every diagram lives in its own file, as a single ```` ```mermaid ```` block under its header table.
 
 1. Open the file and copy everything *between* the ```` ```mermaid ```` and ```` ``` ```` lines.
-2. In draw.io (desktop or app.diagrams.net), choose **Arrange › Insert › Advanced › Mermaid…**, paste, and click **Insert**.
+2. In draw.io (desktop or app.diagrams.net), choose **Arrange › Insert › Mermaid**, paste, and click **Insert**.
 3. Lay it out, restyle it, or annotate it as you like.
 4. To keep that version, save it next to its source with the same name, as an **editable SVG**: **File › Export as › SVG** with *Include a copy of my diagram* checked, saved as `<name>.drawio.svg`, for example `sequence_diagrams/sd3_trigger_incremental_etl.drawio.svg`. GitHub shows it as an image, and draw.io (or the VS Code *Draw.io Integration* extension) reopens it as an editable diagram.
 5. Link it from the diagram's `.md` file, for example `![SD-3 in draw.io](sd3_trigger_incremental_etl.drawio.svg)`.
 
 Rules that keep this from drifting:
 - **The Mermaid block is the source of truth.** A `.drawio.svg` is a view of it. If you change the design in draw.io, carry the change back into the Mermaid block (and its requirement IDs) in the same commit.
-- **Large diagrams.** If one is too dense in draw.io (the class overview, the use-case overview), paste the group diagrams instead. They show the same content in smaller pieces.
+- **Large diagrams.** The system class diagram (`.mmd`) is the biggest. Paste it as a whole, then use draw.io's **Arrange › Layout** to tidy it. If one is too dense in draw.io (the class overview, the use-case overview), paste the group diagrams instead. They show the same content in smaller pieces.
 - **Use cases.** Mermaid has no use-case diagram type, so these are flowcharts: `«actor»` boxes, stadium-shaped use cases and dotted `«include»` / `«extend»` arrows. After inserting one, you can swap the actor boxes for draw.io's UML stick-figure shape (*UML* library, *Actor*).
 
 ## Changing these documents

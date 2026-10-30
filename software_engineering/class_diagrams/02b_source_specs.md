@@ -9,7 +9,7 @@
 | Requirements | [ART](../requirements/requirements.md#articles-art) 005 · [CFG](../requirements/requirements.md#21-configuration-and-topics-cfg) 001, 002 · [DS](../requirements/requirements.md#211-dataset-generation-ds) 006 · [GH](../requirements/requirements.md#github-gh) 006, 007 · [MED](../requirements/requirements.md#medium-med) 007 · [OBS](../requirements/requirements.md#obsidian-obs) 004 · [NFR-CMP](../requirements/requirements.md#38-compliance-and-ethics-cmp) 005 |
 | Use cases | [UC-01](../use_cases/01_configure_and_register_sources.md#uc-01-declare-topics-and-sources-in-yaml), [UC-04](../use_cases/01_configure_and_register_sources.md#uc-04-register-a-source-through-the-ui-or-api) |
 | Sequence diagrams | none |
-| draw.io | copy the ```mermaid block below → Arrange › Insert › Advanced › Mermaid |
+| draw.io | copy the ```mermaid block below → Arrange › Insert › Mermaid |
 
 
 The `type` field picks the spec model (Pydantic discriminated union, FR-CFG-002). Each spec knows its `provider`, whether it is `owned`, and how to build its canonical `key()`. Topic keys are checked against `topics.yaml` through the validation context (FR-CFG-001).

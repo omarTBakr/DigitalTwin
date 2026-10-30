@@ -9,7 +9,7 @@
 | Requirements | none |
 | Use cases | none |
 | Sequence diagrams | [SD-0](../sequence_diagrams/sd0_end_to_end.md), [SD-1](../sequence_diagrams/sd1_etl_pipeline_run.md) |
-| draw.io | copy the ```mermaid block below → Arrange › Insert › Advanced › Mermaid |
+| draw.io | copy the ```mermaid block below → Arrange › Insert › Mermaid |
 
 
 Each box is a package. Implemented packages name their modules. Planned packages are marked `planned`. Every package also depends on `exceptions` and `utils`. Those arrows are left out. The dependency graph is acyclic, implemented and planned together. Two leaf packages exist to keep it that way: `governance` (owner scope, purge contract, exclusions), which every store and every per-user read depends on, and `run_tracking`, which owns `TriggerKind` so that triggers depend on run tracking and never the reverse.

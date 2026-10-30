@@ -9,7 +9,7 @@
 | Requirements | [ART](../requirements/requirements.md#articles-art) 001, 002, 003, 004 · [ETL](../requirements/requirements.md#23-extraction-framework-etl) 005 · [GH](../requirements/requirements.md#github-gh) 005 · [LI](../requirements/requirements.md#linkedin-li) 001 · [OBS](../requirements/requirements.md#obsidian-obs) 002, 004, 006 · [REG](../requirements/requirements.md#22-source-registry-and-multi-user-reg) 011, 014 · [TRG](../requirements/requirements.md#28-triggers-and-scheduling-trg) 003 |
 | Use cases | [UC-07](../use_cases/02_run_etl.md#uc-07-extract-content-from-a-provider), [UC-09](../use_cases/02_run_etl.md#uc-09-upload-a-linkedin-export-or-obsidian-vault) |
 | Sequence diagrams | none |
-| draw.io | copy the ```mermaid block below → Arrange › Insert › Advanced › Mermaid |
+| draw.io | copy the ```mermaid block below → Arrange › Insert › Mermaid |
 
 
 LinkedIn is read only from the official export (FR-LI-001). Obsidian notes are the owner's writing, and vault PDFs are `external` by default with no `owner_id` (FR-ETL-005, FR-OBS-002). Articles are fetched by plain HTTP and converted to markdown (FR-ART-001).

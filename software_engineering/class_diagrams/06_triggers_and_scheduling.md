@@ -9,7 +9,7 @@
 | Requirements | [GH](../requirements/requirements.md#github-gh) 005 · [MED](../requirements/requirements.md#medium-med) 008 · [ORC](../requirements/requirements.md#26-orchestration-and-cli-orc) 006, 008 · [REG](../requirements/requirements.md#22-source-registry-and-multi-user-reg) 011, 014 · [TRG](../requirements/requirements.md#28-triggers-and-scheduling-trg) 002, 003, 004, 005, 006, 007, 008 |
 | Use cases | [UC-11](../use_cases/03_triggers_and_scheduling.md#uc-11-run-sources-on-a-schedule), [UC-12](../use_cases/03_triggers_and_scheduling.md#uc-12-trigger-ingestion-from-new-content), [UC-13](../use_cases/03_triggers_and_scheduling.md#uc-13-crawl-my-sources-on-demand) |
 | Sequence diagrams | [SD-0](../sequence_diagrams/sd0_end_to_end.md), [SD-3](../sequence_diagrams/sd3_trigger_incremental_etl.md), [SD-4](../sequence_diagrams/sd4_feature_pipeline.md), [SD-7](../sequence_diagrams/sd7_register_source_ui.md) |
-| draw.io | copy the ```mermaid block below → Arrange › Insert › Advanced › Mermaid |
+| draw.io | copy the ```mermaid block below → Arrange › Insert › Mermaid |
 
 
 Triggers decide *when* to run and *which* `source_ids`. Every path ends in `TriggerDispatcher`, which calls `digital_data_etl(source_ids=..., options=RunOptions(interactive=False, trigger=...))` (FR-MED-008), and only after `BackoffGate` and the locks allow it. `BackoffGate` is the single place that decides whether a source may run now (`retry_not_before`, blocked cool-down) and when a failed triggered run is retried (`max_attempts`). Webhook replay protection is durable: delivery ids are looked up in the `trigger_events` collection, not kept in memory.

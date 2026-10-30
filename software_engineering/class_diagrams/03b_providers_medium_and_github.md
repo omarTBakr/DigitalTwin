@@ -9,7 +9,7 @@
 | Requirements | [CFG](../requirements/requirements.md#21-configuration-and-topics-cfg) 005 · [GH](../requirements/requirements.md#github-gh) 001, 004, 005, 006, 007 · [MED](../requirements/requirements.md#medium-med) 001, 003, 005, 008 · [REG](../requirements/requirements.md#22-source-registry-and-multi-user-reg) 011, 014 · [TRG](../requirements/requirements.md#28-triggers-and-scheduling-trg) 003 |
 | Use cases | [UC-07](../use_cases/02_run_etl.md#uc-07-extract-content-from-a-provider) |
 | Sequence diagrams | [SD-2](../sequence_diagrams/sd2_medium_extraction.md), [SD-3](../sequence_diagrams/sd3_trigger_incremental_etl.md) |
-| draw.io | copy the ```mermaid block below → Arrange › Insert › Advanced › Mermaid |
+| draw.io | copy the ```mermaid block below → Arrange › Insert › Mermaid |
 
 
 Medium article text comes only from official RSS feeds (FR-MED-001). The browser is used only to discover `medium_tag` links and falls back to the tag feed when blocked (FR-MED-003). GitHub uses the REST API for repos and trees and the raw host for file bodies (FR-GH-001).
