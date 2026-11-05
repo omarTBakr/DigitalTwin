@@ -1,0 +1,53 @@
+@startuml 03_triggers_and_scheduling
+' Use cases 03: Triggers and scheduling
+' PlantUML twin of the Mermaid diagram in 03_triggers_and_scheduling.md; keep the two in sync.
+' Status comes from the use case's stories: implemented, partial, planned.
+
+title Use cases 03: Triggers and scheduling
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor<<implemented>> #DCFCE7
+  BorderColor<<implemented>> #15803D
+  BackgroundColor<<partial>> #FEF9C3
+  BorderColor<<partial>> #A16207
+  BackgroundColor<<planned>> #F4F4F5
+  BorderColor<<planned>> #71717A
+  BorderStyle<<planned>> dashed
+}
+skinparam actor {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+}
+
+actor "Scheduler" as sched
+actor "External platforms" as ext
+actor "Future user" as user
+rectangle "DigitalTwin: Triggers and scheduling" {
+  usecase "UC-11\nRun sources on a schedule" as uc11 <<planned>>
+  usecase "UC-12\nTrigger ingestion from new content" as uc12 <<planned>>
+  usecase "UC-13\nCrawl my sources on demand" as uc13 <<planned>>
+}
+usecase "UC-03\nSign in and accept the terms" as uc03 <<planned>>
+usecase "UC-06\nRun the ETL pipeline" as uc06 <<partial>>
+actor "Pipeline orchestrator (ZenML)" as zenml
+
+sched -- uc11
+ext -- uc12
+user -- uc13
+uc11 -- zenml
+uc12 -- sched
+uc11 ..> uc06 : <<include>>
+uc12 ..> uc06 : <<include>>
+uc13 ..> uc03 : <<include>>
+uc13 ..> uc06 : <<include>>
+
+legend right
+  «implemented» all stories done
+  «partial» some stories done
+  «planned» all stories to do
+endlegend
+
+@enduml

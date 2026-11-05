@@ -1,0 +1,437 @@
+@startuml system_diagram
+' DigitalTwin system class diagram: key classes of every subsystem and how they interact.
+' PlantUML twin of system_class_diagram.mmd (same classes, same relations); keep the two in sync.
+' Members are limited to the methods that cross subsystem boundaries;
+' the full classes are in class_diagrams/00_overview.md ... 11_exceptions.md.
+' Planned classes carry <<planned Pn>> (phase P1-P4) and are grey; existing classes are green; classes without it exist at main 4c40ca7.
+' Arrows: <|-- inherits, <|.. implements, *-- composition, o-- aggregation, --> holds a reference, ..> uses / creates.
+
+title DigitalTwin system class diagram (key classes of every subsystem and how they interact)
+
+left to right direction
+set separator none
+hide empty members
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #DCFCE7
+  BorderColor #15803D
+  BackgroundColor<<planned P1>> #F4F4F5
+  BorderColor<<planned P1>> #A1A1AA
+  FontColor<<planned P1>> #52525B
+  BackgroundColor<<planned P2>> #F4F4F5
+  BorderColor<<planned P2>> #A1A1AA
+  FontColor<<planned P2>> #52525B
+  BackgroundColor<<planned P3>> #F4F4F5
+  BorderColor<<planned P3>> #A1A1AA
+  FontColor<<planned P3>> #52525B
+  BackgroundColor<<planned P4>> #F4F4F5
+  BorderColor<<planned P4>> #A1A1AA
+  FontColor<<planned P4>> #52525B
+  BackgroundColor<<planned P2 P4>> #F4F4F5
+  BorderColor<<planned P2 P4>> #A1A1AA
+  FontColor<<planned P2 P4>> #52525B
+  BackgroundColor<<planned pipeline P2>> #F4F4F5
+  BorderColor<<planned pipeline P2>> #A1A1AA
+  FontColor<<planned pipeline P2>> #52525B
+  BackgroundColor<<planned pipeline P3>> #F4F4F5
+  BorderColor<<planned pipeline P3>> #A1A1AA
+  FontColor<<planned pipeline P3>> #52525B
+}
+
+package Configuration {
+  class Settings <<BaseSettings>> {
+    mongo, github, versioning, raw_store
+  }
+  class YamlLoader {
+    +users: dict<str, UserDeclaration>
+    +topics: dict<str, Topic>
+    +providers: dict<str, BaseProviderSettings>
+  }
+  class TopicMatcher
+}
+
+package Registry {
+  class User <<pydantic>> {
+    id, name, handles
+  }
+  class Source <<pydantic>> {
+    id, provider, spec, topics, owner_id, enabled
+    +{static} from_spec(spec, user_id) : Source
+  }
+  class SourceState <<pydantic>> {
+    status, last_run_id, error, counts
+  }
+  class Subscription <<pydantic>> {
+    user_id, source_id
+  }
+  class SourceSpec <<discriminated union>> {
+    github | obsidian | linkedin_export
+    medium_tag | medium_author | article
+  }
+  abstract class RegistryStore {
+    +upsert_source(source) : bool
+    +subscribe(user_id, source_id) : bool
+    +record_state(source_id, state)
+  }
+  class MongoRegistryStore
+  class RegistrySeeder {
+    +seed(declarations) : SeedStats
+  }
+  class SourceSelector
+  class SourceCursor <<planned P1>>
+}
+
+package Extraction {
+  abstract class "BaseExtractor<S>" as BaseExtractor {
+    +extract() : Iterator<RawDocument>
+    +{abstract} extract_source(source) : Iterator<RawDocument>
+    +health_check(offline) : SourceHealth
+    +make_document(...) : RawDocument
+  }
+  class MediumExtractor
+  class GitHubExtractor
+  class LinkedInExportExtractor
+  class ObsidianExtractor
+  class ArticlesExtractor
+  class CrawlContext {
+    run_id, topics, users, existing topic counts
+  }
+  class CrawlReport {
+    per-item ok / failed / skipped
+  }
+  class provider_registry <<module>> {
+    PROVIDERS
+    +create_extractor(name, settings, sources, context)
+  }
+  class MediumFeedClient
+  class GitHubClient
+  class Browser <<Selenium>>
+  class EnumerationResult <<planned P1>> {
+    +missing() : ids
+  }
+}
+
+package RawStorage {
+  class RawDocument <<pydantic>> {
+    id, source, origin, owner_id, topics, content_hash
+  }
+  class Provenance
+  abstract class RawDataStore {
+    +upsert_many(docs) : UpsertStats
+    +find(...) : list<RawDocument>
+  }
+  class MongoRawDataStore
+  class RawDataSnapshotExporter {
+    +export(providers)
+  }
+  class DvcRepo
+  class GitRepo
+  class SnapshotRestorer <<planned P1>>
+}
+
+package Orchestration {
+  class tools_run <<cli>>
+  class digital_data_etl <<pipeline>>
+  class crawl_provider <<module>> {
+    batches of 50, records source state
+  }
+  class version_raw_data <<step>>
+  class RunRecord <<planned P1>>
+  class ChangeSet <<planned P2>> {
+    inserted, changed, tombstoned ids
+  }
+  class RunRecordStore <<planned P1>> {
+    +save_change_set(change_set)
+  }
+  class LockManager <<planned P1>> {
+    +acquire(key, run_id, ttl) : Lease
+  }
+}
+
+package Triggers {
+  class Scheduler <<planned P1>>
+  abstract class TriggerSource <<planned P1>> {
+    +poll(now) : TriggerEvent
+  }
+  class Coalescer <<planned P1>>
+  class BackoffGate <<planned P1>> {
+    +allowed(source_id, now) : bool
+  }
+  class TriggerDispatcher <<planned P1>> {
+    +dispatch(batch)
+  }
+  class FeatureRunTrigger <<planned P2>> {
+    +on_change_set(change_set)
+  }
+}
+
+package FeaturePipeline {
+  class feature_engineering <<planned pipeline P2>>
+  abstract class Cleaner <<planned P2>>
+  abstract class Masker <<planned P2>>
+  abstract class Chunker <<planned P2>>
+  abstract class Embedder <<planned P2>> {
+    +embed(texts)
+    +estimate_cost_usd(texts)
+  }
+  class CleanedDocument <<planned P2>>
+  class CleanedDocumentStore <<planned P2>>
+  class Chunk <<planned P2>> {
+    owner_id, origin, topics, point_id
+  }
+  abstract class VectorStore <<planned P2>> {
+    +upsert(chunks, vectors)
+    +search(vector, filter, k)
+    +delete_by_document(ids)
+  }
+  class Lineage <<planned P2>> {
+    data_md5, commits, upstream versions
+  }
+}
+
+package Datasets {
+  class generate_datasets <<planned pipeline P3>>
+  class TrainingDataSelector <<planned P3>>
+  abstract class SampleGenerator <<planned P3>>
+  abstract class SampleFilter <<planned P3>>
+  class DatasetVersion <<planned P3>>
+  abstract class DatasetStore <<planned P3>> {
+    +publish(version)
+  }
+}
+
+package TrainingAndEvaluation {
+  class training <<planned pipeline P3>>
+  abstract class Trainer <<planned P3>> {
+    +train(config, dataset, parent)
+  }
+  abstract class ComputeBackend <<planned P3>>
+  class ModelVersion <<planned P3>>
+  abstract class ModelRegistry <<planned P3>> {
+    +register(version)
+    +tag(version, tag)
+  }
+  abstract class Evaluator <<planned P2>>
+  class PromotionGate <<planned P3>> {
+    +decide(candidate, production)
+  }
+}
+
+package InferenceAndLLMOps {
+  class TwinService <<planned P2>> {
+    +answer(request) : ChatResponse
+  }
+  class Retriever <<planned P2>> {
+    +retrieve(query, user_id)
+  }
+  class PromptRegistry <<planned P2>>
+  class ModelResolver <<planned P3>> {
+    +client_for(user_id) : LLMClient
+  }
+  abstract class LLMClient <<planned P2>> {
+    +generate(prompt)
+    +stream(prompt)
+  }
+  abstract class Tracer <<planned P2>>
+  class BudgetGuard <<planned P2>> {
+    +ensure(stage, estimate, user_id)
+    +charge(entry)
+  }
+  class CostLedger <<planned P2>>
+  class Alerter <<planned P1>>
+}
+
+package ApiAndUI {
+  class ApiApp <<planned P2 P4>>
+  abstract class AuthService <<planned P2>>
+  class SourceRegistrationService <<planned P4>>
+  class OnDemandCrawlService <<planned P4>>
+  class ExclusionService <<planned P4>>
+  class UploadService <<planned P4>>
+}
+
+package GovernanceAndPrivacy {
+  class OwnerScope <<planned P2>> {
+    +{static} for_user(user_id)
+    +assert_all(owner_ids)
+  }
+  interface Purgeable <<planned P1>> {
+    +purge(scope)
+  }
+  class Exclusion <<planned P2>>
+  class AccountDeletionService <<planned P4>> {
+    +delete_account(user_id)
+  }
+  class TaintTracker <<planned P4>>
+  class DataExportService <<planned P4>>
+}
+
+package Exceptions {
+  class DigitalTwinError {
+    ConfigError, SourceError, StorageError
+    VersioningError, PipelineError, planned AccessError
+  }
+}
+
+legend right
+  green: exists at main 4c40ca7
+  grey «planned Pn»: planned for phase Pn
+endlegend
+
+' configuration and registry
+YamlLoader ..> SourceSpec : validates
+YamlLoader ..> TopicMatcher
+RegistrySeeder --> RegistryStore
+RegistrySeeder ..> Source : from_spec
+SourceSelector --> RegistryStore
+RegistryStore <|-- MongoRegistryStore
+RegistryStore ..> User : persists
+RegistryStore ..> Subscription : persists
+RegistryStore ..> Source : persists
+Source *-- SourceState
+Source ..> SourceSpec : typed_spec
+Subscription --> User
+Subscription --> Source
+SourceState o-- SourceCursor : planned
+
+' ETL run
+tools_run ..> digital_data_etl : starts
+digital_data_etl ..> RegistrySeeder : sync_registry
+digital_data_etl ..> SourceSelector : select_sources
+digital_data_etl ..> crawl_provider : crawl_provider steps
+digital_data_etl ..> version_raw_data
+crawl_provider ..> provider_registry : create_extractor
+crawl_provider ..> RawDataStore : upsert_many
+crawl_provider ..> RegistryStore : record_state
+crawl_provider ..> YamlLoader : topics, providers
+crawl_provider ..> LockManager : planned
+version_raw_data ..> RawDataSnapshotExporter
+version_raw_data ..> DvcRepo
+version_raw_data ..> GitRepo
+RawDataSnapshotExporter --> RawDataStore
+RawDataSnapshotExporter --> RegistryStore
+SnapshotRestorer ..> RawDataStore
+RunRecord ..> ChangeSet
+RunRecordStore ..> RunRecord : persists
+RunRecordStore ..> ChangeSet : persists
+
+' extraction
+provider_registry ..> BaseExtractor : creates
+BaseExtractor <|-- MediumExtractor
+BaseExtractor <|-- GitHubExtractor
+BaseExtractor <|-- LinkedInExportExtractor
+BaseExtractor <|-- ObsidianExtractor
+BaseExtractor <|-- ArticlesExtractor
+BaseExtractor o-- Source : sources
+BaseExtractor --> CrawlContext
+BaseExtractor *-- CrawlReport
+BaseExtractor ..> RawDocument : yields
+BaseExtractor ..> EnumerationResult : planned
+CrawlContext *-- TopicMatcher
+MediumExtractor *-- MediumFeedClient
+MediumExtractor ..> Browser : tag discovery only
+GitHubExtractor *-- GitHubClient
+GitHubExtractor ..> Settings : token
+RawDocument *-- Provenance
+RawDataStore <|-- MongoRawDataStore
+RawDataStore ..> RawDocument : persists
+
+' triggers
+TriggerSource ..> Coalescer : TriggerEvent
+Scheduler ..> Coalescer : TriggerEvent
+TriggerSource --> GitHubClient : pollers reuse clients
+Coalescer ..> TriggerDispatcher : TriggerBatch
+TriggerDispatcher --> BackoffGate
+TriggerDispatcher --> LockManager
+TriggerDispatcher ..> digital_data_etl : source_ids, unattended
+TriggerDispatcher ..> Alerter : repeated failures
+BackoffGate --> RegistryStore : retry_not_before
+FeatureRunTrigger ..> ChangeSet
+FeatureRunTrigger ..> feature_engineering : starts
+
+' feature pipeline
+feature_engineering ..> RunRecordStore : get_change_set
+feature_engineering ..> RawDataStore : find
+feature_engineering ..> Cleaner
+feature_engineering ..> Masker
+feature_engineering ..> Chunker
+feature_engineering ..> Embedder
+feature_engineering ..> VectorStore
+feature_engineering ..> CleanedDocumentStore
+Cleaner ..> CleanedDocument : produces
+Chunker ..> Chunk : produces
+CleanedDocument *-- Lineage
+VectorStore ..> Chunk : stores
+Embedder ..> BudgetGuard : hosted models
+
+' datasets, training, evaluation
+generate_datasets ..> TrainingDataSelector
+generate_datasets ..> SampleGenerator
+generate_datasets ..> SampleFilter
+generate_datasets ..> DatasetStore
+TrainingDataSelector --> CleanedDocumentStore
+TrainingDataSelector ..> OwnerScope
+TrainingDataSelector --> RegistryStore : exclusions, licences
+SampleGenerator --> LLMClient
+DatasetStore ..> DatasetVersion
+DatasetVersion *-- Lineage
+training ..> Trainer
+training ..> OwnerScope : assert_all
+training ..> Evaluator
+training ..> PromotionGate
+Trainer --> ComputeBackend
+Trainer ..> DatasetVersion : input
+Trainer ..> ModelVersion : produces
+ComputeBackend --> BudgetGuard
+ModelRegistry ..> ModelVersion : stores
+ModelVersion *-- Lineage
+Evaluator ..> TwinService : candidate twin
+Evaluator o-- LLMClient : judge
+PromotionGate ..> ModelRegistry : tag production
+
+' inference and LLMOps
+TwinService --> Retriever
+TwinService --> PromptRegistry
+TwinService --> ModelResolver
+TwinService --> Tracer
+TwinService --> BudgetGuard
+Retriever --> Embedder
+Retriever --> VectorStore
+Retriever ..> OwnerScope : user filter
+ModelResolver --> ModelRegistry
+ModelResolver ..> LLMClient : adapter or base model
+BudgetGuard --> CostLedger
+
+' API and UI
+ApiApp --> AuthService
+ApiApp ..> TwinService : chat
+ApiApp ..> SourceRegistrationService
+ApiApp ..> OnDemandCrawlService
+ApiApp ..> ExclusionService
+ApiApp ..> UploadService
+ApiApp ..> AccountDeletionService
+SourceRegistrationService --> RegistryStore
+SourceRegistrationService ..> SourceSpec : validates payload
+OnDemandCrawlService --> TriggerDispatcher
+UploadService ..> TriggerDispatcher
+ExclusionService ..> Exclusion
+ExclusionService --> VectorStore
+
+' governance and privacy: every store that holds user data is Purgeable
+Purgeable <|.. RawDataStore
+Purgeable <|.. RegistryStore
+Purgeable <|.. CleanedDocumentStore
+Purgeable <|.. VectorStore
+Purgeable <|.. DatasetStore
+Purgeable <|.. ModelRegistry
+Purgeable <|.. Tracer
+AccountDeletionService o-- Purgeable : every store
+AccountDeletionService --> TaintTracker
+TaintTracker --> ModelRegistry : tag tainted
+DataExportService ..> RawDataStore
+DataExportService ..> RegistryStore
+CleanedDocumentStore ..> OwnerScope
+
+@enduml

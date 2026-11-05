@@ -1,0 +1,69 @@
+@startuml sd6_datasets_training_eval
+' SD-6. Datasets, fine-tuning, evaluation and promotion (planned P3)
+' PlantUML twin of the Mermaid diagram in sd6_datasets_training_eval.md; keep the two in sync.
+' ->> is an asynchronous message (event, scheduled job, fire-and-forget), --> is a return.
+
+title SD-6. Datasets, fine-tuning, evaluation and promotion (planned P3)
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+hide footbox
+
+autonumber
+  actor "Owner" as Owner
+  participant "generate_datasets (ZenML)" as GenP
+  participant "TrainingDataSelector" as Sel
+  participant "CleanedDocumentStore" as Cds
+  participant "NerRedactor" as Mask
+  participant "SampleGenerator" as Gen
+  participant "BudgetGuard" as Budget
+  participant "SampleFilter chain" as Filt
+  participant "DocumentSplitter" as Split
+  participant "DatasetStore" as DStore
+  participant "training (ZenML)" as TrainP
+  participant "DatasetQualityGate" as QGate
+  participant "OwnerScope" as Scope
+  participant "SftTrainer / DpoTrainer" as Trainer
+  participant "ComputeBackend" as GPU
+  participant "ModelRegistry" as MReg
+  participant "Evaluators" as Evals
+  participant "PromotionGate" as Promo
+  Owner -> GenP : generate_datasets(owner_id, cleaned_version)
+  GenP -> Sel : select(OwnerScope.for_user(owner), style)
+  Sel -> Cds : find(scope): style-eligible self + licensed external only
+  Sel --> GenP : documents + eligibility report
+  GenP -> Mask : redact third-party PII (typed placeholders)
+  GenP -> Gen : estimate_cost_usd(chunks)
+  GenP -> Budget : ensure(dataset_generation, estimate)
+  GenP -> Gen : generate(chunks): InstructionSamples and PreferenceSamples
+  GenP -> Budget : charge(actual cost)
+  GenP -> Filt : apply(samples): dedup, length, judge faithfulness, FilterReport
+  GenP -> Split : split(samples, duplicate groups): train/test by document
+  GenP -> DStore : publish(DatasetVersion + DatasetCard + Lineage) (immutable)
+  DStore --> Owner : dataset@vN
+  Owner -> TrainP : training(owner_id, dataset@vN, TrainingConfig)
+  TrainP -> QGate : check(version): min_samples, max_removal_rate
+  TrainP -> Scope : assert_all(sample owner_ids) (own or null only)
+  alt gate or isolation check fails
+    TrainP --> Owner : refuse (no GPU time spent)
+  else
+    TrainP -> Budget : ensure(training, max_usd)
+    TrainP -> Trainer : train(config, dataset, parent=None) SFT
+    Trainer -> GPU : submit, status (cancel at max_hours or max_usd)
+    GPU --> Trainer : adapter
+    Trainer -> MReg : register(ModelVersion sft with Lineage)
+    TrainP -> Trainer : train(config, preference dataset, parent=sft) DPO
+    Trainer -> MReg : register(ModelVersion dpo, parent sft)
+    TrainP -> Evals : evaluate(candidate twin, held-out split + owner-approved EvalSet)
+    note over Evals : style, relevance, faithfulness, benchmark regression, safety red-team
+    Evals --> TrainP : EvalReport (metrics with 95% CI)
+    TrainP -> MReg : current(owner, production)
+    TrainP -> Promo : decide(candidate report, production report)
+    alt passes every threshold
+      TrainP -> MReg : tag(candidate, production)
+    else
+      TrainP -> MReg : tag(candidate, staging) only
+    end
+  end
+
+@enduml

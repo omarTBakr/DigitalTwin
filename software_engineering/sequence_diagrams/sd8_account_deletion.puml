@@ -1,0 +1,49 @@
+@startuml sd8_account_deletion
+' SD-8. Account deletion (planned P4)
+' PlantUML twin of the Mermaid diagram in sd8_account_deletion.md; keep the two in sync.
+' ->> is an asynchronous message (event, scheduled job, fire-and-forget), --> is a return.
+
+title SD-8. Account deletion (planned P4)
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+hide footbox
+
+autonumber
+  actor "User" as User
+  participant "ApiApp" as Api
+  participant "AccountDeletionService" as Del
+  participant "RegistryStore" as RegStore
+  participant "RawDataStore" as Raw
+  participant "CleanedDocumentStore" as Cds
+  participant "VectorStore" as VS
+  participant "DatasetStore" as DStore
+  participant "ModelRegistry" as MReg
+  participant "Tracer" as Tracer
+  participant "SnapshotLayout" as Snap
+  participant "TaintTracker" as Taint
+  participant "DeletionLogStore" as Log
+  User -> Api : DELETE /api/v1/me (re-authenticated)
+  Api -> Del : delete_account(user_id)
+  Del -> RegStore : disable user (no new runs select their sources)
+  critical purge every store by PurgeScope(owner_id=user)
+    Del -> VS : purge(scope)
+    Del -> Cds : purge(scope)
+    Del -> Raw : purge(scope)
+    Del -> DStore : purge(scope)
+    Del -> MReg : purge(scope) (the user's adapters)
+    Del -> Tracer : purge(scope)
+    Del -> RegStore : purge(scope): subscriptions, owned sources, user record
+  else a store fails
+    Del -> Log : append(DeletionLog incomplete, failed stores) and retry within 7 days
+  end
+  Del -> Snap : user partition path (data/raw/users/~<id>/): removed from the next snapshot
+  Del -> Taint : on_deleted(document ids)
+  Taint -> MReg : trained_on(datasets containing the documents)
+  Taint -> MReg : tag(shared models, tainted) (retrain or retire within 30 days)
+  Del -> Log : append(DeletionLog completed, stores[])
+  Del --> Api : DeletionLog
+  Api --> User : 202 deletion completed or scheduled
+  note over Snap : past snapshots in git and DVC history follow the policy decided in OQ-06
+
+@enduml

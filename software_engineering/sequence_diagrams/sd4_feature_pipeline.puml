@@ -1,0 +1,64 @@
+@startuml sd4_feature_pipeline
+' SD-4. Feature pipeline from a change set (planned P2)
+' PlantUML twin of the Mermaid diagram in sd4_feature_pipeline.md; keep the two in sync.
+' ->> is an asynchronous message (event, scheduled job, fire-and-forget), --> is a return.
+
+title SD-4. Feature pipeline from a change set (planned P2)
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+hide footbox
+
+autonumber
+  participant "FeatureRunTrigger" as FeatTrig
+  participant "feature_engineering (ZenML)" as Pipe
+  participant "RunRecordStore" as Runs
+  participant "RawDataStore" as Raw
+  participant "feature_strategies" as Strat
+  participant "Cleaner" as Clean
+  participant "QualityGate" as Gate
+  participant "Masker" as Mask
+  participant "DuplicateDetector" as Dup
+  participant "CleanedDocumentStore" as Cds
+  participant "Chunker" as Chunk
+  participant "Embedder" as Emb
+  participant "BudgetGuard" as Budget
+  participant "VectorStore" as VS
+  FeatTrig ->> Pipe : feature_engineering(change_set_id)
+  Pipe -> Runs : get_change_set(id), get(run_id): ids + Lineage(data_md5, commits)
+  par tombstoned ids
+    Pipe -> Cds : mark_deleted(ids)
+    Pipe -> VS : delete_by_document(ids)
+  else inserted + changed ids
+    Pipe -> Raw : find(ids)
+    loop each RawDocument
+      Pipe -> Strat : cleaner_for(kind)
+      Pipe -> Clean : clean(doc) (versioned rules, code kept byte-for-byte)
+      Pipe -> Gate : check(cleaned)
+      alt low quality
+        Gate --> Pipe : quarantine reason
+      else ok
+        Pipe -> Mask : mask(text) (secrets before indexing)
+      end
+    end
+    Pipe -> Dup : groups(cleaned docs) (content_hash + MinHash)
+    Pipe -> Cds : upsert(cleaned docs with Lineage, cleaner_version)
+    loop each cleaned document
+      Pipe -> Strat : chunker_for(kind)
+      Pipe -> Chunk : chunk(doc): chunks with owner_id, origin, topics, deterministic point ids
+      Pipe -> VS : point_ids(document_id) (old chunks to remove)
+    end
+    Pipe -> Emb : estimate_cost_usd(texts)
+    Pipe -> Budget : ensure(embedding, estimate, user)
+    alt over budget or over max_usd
+      Budget --> Pipe : BudgetExceededError (run aborts before embedding)
+    else
+      Pipe -> Emb : embed(texts)
+      Pipe -> VS : upsert(chunks, vectors), delete stale point ids
+      Pipe -> Budget : charge(CostEntry) (hosted model only)
+    end
+  end
+  Pipe --> FeatTrig : summary (processed, quarantined, upserts, deletes)
+  note over Pipe, VS : re-index (new model or chunker): create_collection, fill, switch_alias (FEA-010)
+
+@enduml

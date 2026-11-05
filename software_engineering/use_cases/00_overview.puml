@@ -1,0 +1,119 @@
+@startuml 00_overview
+' Use cases 00: Overview
+' PlantUML twin of the Mermaid diagram in 00_overview.md; keep the two in sync.
+' Status comes from the use case's stories: implemented, partial, planned.
+
+title Use cases 00: Overview
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor<<implemented>> #DCFCE7
+  BorderColor<<implemented>> #15803D
+  BackgroundColor<<partial>> #FEF9C3
+  BorderColor<<partial>> #A16207
+  BackgroundColor<<planned>> #F4F4F5
+  BorderColor<<planned>> #71717A
+  BorderStyle<<planned>> dashed
+}
+skinparam actor {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+}
+
+actor "Owner" as owner
+actor "Future user" as user
+actor "Admin" as admin
+actor "Twin consumer" as consumer
+rectangle "DigitalTwin" {
+  rectangle "01 Configure and register sources" {
+    usecase "UC-01\nDeclare topics and sources in YAML" as uc01 <<partial>>
+    usecase "UC-02\nCheck configuration and provider health" as uc02 <<implemented>>
+    usecase "UC-03\nSign in and accept the terms" as uc03 <<planned>>
+    usecase "UC-04\nRegister a source through the UI or API" as uc04 <<planned>>
+    usecase "UC-05\nManage subscriptions and see crawl status" as uc05 <<partial>>
+  }
+  rectangle "02 Run the ETL" {
+    usecase "UC-06\nRun the ETL pipeline" as uc06 <<partial>>
+    usecase "UC-07\nExtract content from a provider" as uc07 <<partial>>
+    usecase "UC-08\nDetect changes and deletions upstream" as uc08 <<partial>>
+    usecase "UC-09\nUpload a LinkedIn export or Obsidian vault" as uc09 <<planned>>
+    usecase "UC-10\nRestore a raw-data snapshot" as uc10 <<planned>>
+  }
+  rectangle "03 Triggers and scheduling" {
+    usecase "UC-11\nRun sources on a schedule" as uc11 <<planned>>
+    usecase "UC-12\nTrigger ingestion from new content" as uc12 <<planned>>
+    usecase "UC-13\nCrawl my sources on demand" as uc13 <<planned>>
+  }
+  rectangle "04 Search index and RAG chat" {
+    usecase "UC-14\nBuild and update the search index" as uc14 <<planned>>
+    usecase "UC-15\nExclude or forget content" as uc15 <<planned>>
+    usecase "UC-16\nChat with the twin" as uc16 <<partial>>
+    usecase "UC-17\nGive feedback on an answer" as uc17 <<planned>>
+  }
+  rectangle "05 Datasets, training and evaluation" {
+    usecase "UC-18\nGenerate training datasets" as uc18 <<planned>>
+    usecase "UC-19\nFine-tune and register a twin model" as uc19 <<planned>>
+    usecase "UC-20\nEvaluate and promote a model" as uc20 <<planned>>
+  }
+  rectangle "06 Administration, privacy and operations" {
+    usecase "UC-21\nAdminister the platform" as uc21 <<planned>>
+    usecase "UC-22\nExport my data" as uc22 <<planned>>
+    usecase "UC-23\nDelete my account" as uc23 <<planned>>
+    usecase "UC-24\nOperate and monitor the system" as uc24 <<planned>>
+  }
+}
+actor "Scheduler" as sched
+actor "Pipeline orchestrator (ZenML)" as zenml
+actor "External platforms" as ext
+actor "LLM and GPU providers" as llm
+
+owner -- uc01
+owner -- uc02
+uc02 -- ext
+user -- uc03
+user -- uc04
+uc04 -- ext
+user -- uc05
+owner -- uc05
+owner -- uc06
+uc06 -- zenml
+uc07 -- zenml
+uc07 -- ext
+uc08 -- zenml
+uc08 -- ext
+user -- uc09
+owner -- uc10
+uc11 -- sched
+uc11 -- zenml
+uc12 -- ext
+uc12 -- sched
+user -- uc13
+uc14 -- zenml
+uc14 -- llm
+user -- uc15
+owner -- uc15
+consumer -- uc16
+uc16 -- llm
+consumer -- uc17
+owner -- uc18
+uc18 -- zenml
+uc18 -- llm
+owner -- uc19
+uc19 -- zenml
+uc19 -- llm
+owner -- uc20
+uc20 -- llm
+admin -- uc21
+user -- uc22
+user -- uc23
+owner -- uc24
+
+legend right
+  «implemented» all stories done
+  «partial» some stories done
+  «planned» all stories to do
+endlegend
+
+@enduml

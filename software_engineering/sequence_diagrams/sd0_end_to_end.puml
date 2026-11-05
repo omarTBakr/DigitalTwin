@@ -1,0 +1,39 @@
+@startuml sd0_end_to_end
+' SD-0. End-to-end overview
+' PlantUML twin of the Mermaid diagram in sd0_end_to_end.md; keep the two in sync.
+' ->> is an asynchronous message (event, scheduled job, fire-and-forget), --> is a return.
+
+title SD-0. End-to-end overview
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+hide footbox
+
+autonumber
+  actor "Owner" as Owner
+  participant "Scheduler / triggers (P1)" as Trig
+  participant "ETL pipeline (P0)" as ETL
+  participant "MongoDB (registry, raw + cleaned documents)" as Raw
+  participant "DVC snapshot" as DVC
+  participant "Feature pipeline (P2)" as Feat
+  participant "Vector DB (P2)" as VDB
+  participant "Datasets + training + eval (P3)" as Train
+  participant "Model registry (P3)" as Reg
+  participant "Twin API (P2)" as API
+  actor "Twin consumer" as Consumer
+  Owner -> ETL : tools.run --etl (manual run)
+  Trig ->> ETL : digital_data_etl(source_ids) (schedule or new-content event)
+  ETL -> Raw : upsert RawDocuments, record source state
+  ETL -> DVC : export JSONL, dvc add, commit, push
+  ETL ->> Feat : ChangeSet (inserted, changed, tombstoned ids)
+  Feat -> Raw : read changed documents
+  Feat -> VDB : upsert chunks + vectors, delete tombstoned
+  Owner -> Train : generate_datasets + training (on demand)
+  Train -> Raw : style-eligible self + licensed external cleaned documents
+  Train -> Reg : register ModelVersion, tag production if the eval gate passes
+  Consumer -> API : POST /api/v1/twins/{user}/chat
+  API -> VDB : filtered search (user's own + shared external)
+  API -> Reg : resolve the user's production adapter
+  API --> Consumer : answer + citations + AI disclosure
+
+@enduml

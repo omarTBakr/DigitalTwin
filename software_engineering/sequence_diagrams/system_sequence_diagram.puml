@@ -1,0 +1,403 @@
+@startuml system_sequence_diagram
+' DigitalTwin whole-system sequence diagram: every flow from source registration to account deletion,
+' at class level, on one diagram. Curated merge of SD-1 ... SD-8 (sequence_diagrams/sdN_*.md); the
+' detailed flows stay in those files. Participants are the classes of class_diagrams/system_diagram.puml.
+' Baseline main 4c40ca7: green participants exist there, grey <<planned Pn>> ones are planned for phase Pn.
+' Keep in sync with the sdN diagrams when a flow changes.
+' -> call, --> return, ->> asynchronous message (event, scheduled job, fire-and-forget).
+
+title DigitalTwin whole-system sequence diagram (from source registration to account deletion)
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+skinparam sequenceBoxBorderColor #A1A1AA
+skinparam ParticipantPadding 4
+skinparam BoxPadding 6
+hide footbox
+autonumber
+
+!$done = "#DCFCE7"
+!$plan = "#F4F4F5"
+
+box "Actors" #FFFFFF
+  actor "Owner" as Owner
+  actor "Future user" as User
+  actor "Twin consumer" as Consumer
+end box
+
+box "API and UI" #FAFAFA
+  participant "ApiApp" as Api <<planned P2 P4>> $plan
+  participant "AuthService" as Auth <<planned P2>> $plan
+  participant "SourceRegistrationService" as RegSvc <<planned P4>> $plan
+  participant "OnDemandCrawlService" as CrawlSvc <<planned P4>> $plan
+end box
+
+box "Triggers" #FAFAFA
+  participant "Scheduler" as Sched <<planned P1>> $plan
+  participant "TriggerSource\n(GitHubPushPoller)" as Poller <<planned P1>> $plan
+  participant "Coalescer" as Coal <<planned P1>> $plan
+  participant "BackoffGate" as Gate <<planned P1>> $plan
+  participant "TriggerDispatcher" as Disp <<planned P1>> $plan
+  participant "FeatureRunTrigger" as FeatTrig <<planned P2>> $plan
+end box
+
+box "Orchestration" #FAFAFA
+  participant "tools.run" as CLI <<cli>> $done
+  participant "digital_data_etl" as ETL <<pipeline>> $done
+  participant "crawl_provider" as Crawl <<module>> $done
+  participant "version_raw_data" as Ver <<step>> $done
+  participant "LockManager" as Locks <<planned P1>> $plan
+  participant "RunRecordStore" as Runs <<planned P1>> $plan
+end box
+
+box "Configuration and Registry" #FAFAFA
+  participant "YamlLoader" as Loader $done
+  participant "RegistrySeeder" as Seeder $done
+  participant "SourceSelector" as Select $done
+  participant "RegistryStore" as RegStore $done
+end box
+
+box "Extraction" #FAFAFA
+  participant "provider_registry" as Prov <<module>> $done
+  participant "BaseExtractor\nsubclass" as Ext $done
+end box
+
+entity "External platforms" as Platforms
+
+box "Raw storage and versioning" #FAFAFA
+  participant "RawDataStore" as Raw $done
+  participant "RawDataSnapshotExporter" as Exp $done
+  participant "DvcRepo / GitRepo" as Dvc $done
+end box
+
+box "Feature pipeline" #FAFAFA
+  participant "feature_engineering" as Pipe <<planned pipeline P2>> $plan
+  participant "Cleaner / QualityGate\n/ Masker" as Clean <<planned P2>> $plan
+  participant "CleanedDocumentStore" as Cds <<planned P2>> $plan
+  participant "Chunker" as Chunk <<planned P2>> $plan
+  participant "Embedder" as Emb <<planned P2>> $plan
+  participant "VectorStore" as VS <<planned P2>> $plan
+end box
+
+box "Datasets, training and evaluation" #FAFAFA
+  participant "generate_datasets" as GenP <<planned pipeline P3>> $plan
+  participant "TrainingDataSelector" as Sel <<planned P3>> $plan
+  participant "SampleGenerator\n/ SampleFilter" as Gen <<planned P3>> $plan
+  participant "DatasetStore" as DStore <<planned P3>> $plan
+  participant "training" as TrainP <<planned pipeline P3>> $plan
+  participant "Trainer" as Trainer <<planned P3>> $plan
+  participant "ComputeBackend" as GPU <<planned P3>> $plan
+  participant "Evaluator" as Evals <<planned P2>> $plan
+  participant "PromotionGate" as Promo <<planned P3>> $plan
+  participant "ModelRegistry" as MReg <<planned P3>> $plan
+end box
+
+box "Inference and LLMOps" #FAFAFA
+  participant "TwinService" as Twin <<planned P2>> $plan
+  participant "Retriever" as Ret <<planned P2>> $plan
+  participant "PromptRegistry" as Prompts <<planned P2>> $plan
+  participant "ModelResolver" as Res <<planned P3>> $plan
+  participant "LLMClient" as LLM <<planned P2>> $plan
+  participant "BudgetGuard" as Budget <<planned P2>> $plan
+  participant "Tracer" as Tracer <<planned P2>> $plan
+  participant "Alerter" as Alert <<planned P1>> $plan
+end box
+
+box "Governance and privacy" #FAFAFA
+  participant "OwnerScope" as Scope <<planned P2>> $plan
+  participant "AccountDeletionService" as DelSvc <<planned P4>> $plan
+  participant "TaintTracker" as Taint <<planned P4>> $plan
+end box
+
+legend top right
+  green: exists at main 4c40ca7
+  grey «planned Pn»: planned for phase Pn
+  ->> asynchronous message, --> return
+endlegend
+
+' ---------------------------------------------------------------------------------------------
+== 1. Register a source (planned P4, SD-7) ==
+note over User, RegStore : SD-7 sd7_register_source_ui.md. Sources can also be declared in YAML (UC-01), read in section 2.
+User -> Api : POST /api/v1/sources {type, handle}
+Api -> Auth : authenticate(session)
+alt no session, or no Consent for the current terms
+  Api --> User : 401 / redirect to consent
+else
+  Api -> RegSvc : register(principal, payload)
+  RegSvc -> RegSvc : QuotaPolicy.check, source_spec_adapter.validate(payload)
+  alt invalid spec
+    RegSvc --> User : 422 field-level messages
+  else valid spec
+    opt owned source type (GitHub)
+      RegSvc -> Platforms : GitHubOAuthVerifier.verify_owner(token, username)
+    end
+    RegSvc -> RegStore : upsert_source(source, declared_via=ui) (owner never changes)
+    alt owned by another user
+      RegStore --> User : 409 OwnershipConflictError
+    else new or existing canonical source
+      RegSvc -> RegStore : subscribe(user, source), merge topics
+      RegSvc --> User : 201 subscription
+    end
+  end
+end
+opt user clicks "crawl now"
+  User -> Api : POST /api/v1/crawls {source_ids}
+  Api -> CrawlSvc : trigger(principal, source_ids) (1 per source per hour)
+  CrawlSvc ->> Disp : dispatch(TriggerBatch kind manual) (continues in section 3 at the lock step)
+  CrawlSvc --> User : 202 run id
+end
+
+' ---------------------------------------------------------------------------------------------
+== 2. Manual ETL run (implemented P0, SD-1 and SD-2) ==
+note over Owner, Dvc : SD-1 sd1_etl_pipeline_run.md. This is the only flow that runs end to end at the baseline.
+Owner -> CLI : --etl --user omar
+CLI -> ETL : digital_data_etl(user_id, source_ids)
+ETL -> Loader : sync_registry: users (profile.yaml + sources/*.yaml)
+Loader --> ETL : UserDeclaration per user
+ETL -> Seeder : seed(declarations)
+Seeder -> RegStore : upsert_user, upsert sources ($setOnInsert state), subscribe
+Seeder --> ETL : SeedStats
+ETL -> Select : select_sources(registry_sync, user_id, source_ids)
+Select -> RegStore : users, subscriptions, sources
+alt unknown user or source id
+  Select --> ETL : UnknownUserError / UnknownSourceError (stops before any fetch)
+else
+  Select --> ETL : selection {provider: [source ids]}
+end
+loop each provider: medium, github, linkedin, obsidian, articles
+  ETL -> Crawl : crawl_~<provider>(selection), crawl_provider(provider, ids, run_id)
+  alt no source ids for this provider
+    Crawl --> ETL : status skipped
+  else
+    Crawl -> RegStore : sources(ids), users()
+    Crawl -> Raw : setup(), topics_by_id(provider)
+    Crawl -> Prov : create_extractor(provider, settings, sources, CrawlContext)
+    Prov --> Crawl : extractor
+    Crawl -> Ext : extract()
+    activate Ext
+    loop each source
+      Ext -> Platforms : fetch (RSS, GitHub API, export file, vault, article URL)
+      ref over Ext, Platforms : provider-specific extraction, e.g. Medium in SD-2 sd2_medium_extraction.md
+      alt item-level problem
+        Ext -> Ext : report.failed / skipped (reason)
+      else SourceError
+        Ext -> Ext : report.source_failed, continue with the next source
+      else AccessBlocked / Authentication / RateLimit
+        Ext -> Ext : abort: remaining sources marked not crawled
+      end
+      Ext --> Crawl : RawDocument (streamed)
+      opt batch reaches 50
+        Crawl -> Raw : upsert_many(batch)
+      end
+    end
+    deactivate Ext
+    Crawl -> Raw : flush remaining batch
+    Crawl -> RegStore : record_states(report, run_id)
+    Crawl --> ETL : (summary, CrawlReport)
+  end
+end
+ETL -> Ver : version_raw_data(crawl_summaries)
+opt DVC_ENABLED
+  Ver -> Exp : export(providers)
+  Exp -> Raw : find(provider)
+  Exp -> RegStore : users, sources, subscriptions
+  Exp --> Ver : data/raw/*.jsonl
+  Ver -> Dvc : dvc add data/raw; opt commit; opt push
+end
+Ver --> ETL : versioning_summary (failure reported, never raised)
+alt any provider or versioning failed
+  ETL --> CLI : PipelineError (stored data is kept)
+else
+  ETL --> CLI : ok / partial
+end
+CLI --> Owner : exit code, ZenML dashboard
+
+' ---------------------------------------------------------------------------------------------
+== 3. Scheduled or triggered incremental run (planned P1, SD-3) ==
+note over Sched, RegStore : SD-3 sd3_trigger_incremental_etl.md. Unattended: no browser, no prompts.
+loop every polling interval (default 15 min)
+  Sched ->> Poller : poll(now)
+  Poller -> RegStore : source cursor (pushed_at per repo)
+  Poller -> Platforms : anything new since the cursor?
+  Poller ->> Coal : TriggerEvent kind poll
+end
+Sched ->> Coal : TriggerEvent kind scheduled (provider cadence)
+Coal -> Coal : flush(now): one TriggerBatch per source per window
+Coal -> Gate : allowed(source_id, now)
+Gate -> RegStore : retry_not_before
+alt cooling down after a rate limit or block
+  Gate --> Coal : deferred
+else allowed
+  Coal -> Disp : dispatch(batch)
+  Disp -> Locks : acquire(source key, run_id, ttl)
+  alt lock held by another run
+    Locks --> Disp : None (event skipped locked)
+  else lease granted
+    Disp ->> ETL : run(source_ids, interactive=false, trigger)
+    ETL -> Ext : extract() with cursors, fingerprints, exclusions
+    Ext -> Platforms : fetch changed items only
+    Ext -> Ext : unchanged pushed_at / blob SHA? skipped unchanged
+    Ext --> ETL : changed documents + EnumerationResult(complete, seen ids)
+    ETL -> Raw : upsert_many: UpsertStats(inserted, changed, unchanged)
+    opt enumeration complete
+      ETL -> Raw : tombstone(EnumerationResult.missing())
+    end
+    ETL -> RegStore : record_state: last_success_at, cursor, consecutive_failures, retry_not_before
+    ETL -> Runs : save(RunRecord), save_change_set(ChangeSet)
+    ETL -> Locks : release(lease)
+    ETL --> Disp : run status
+    alt run failed
+      Disp -> Gate : next_attempt_at(event) (bounded backoff, 3 attempts)
+      opt consecutive_failures reaches 3
+        Disp ->> Alert : fire(source failing, last error)
+      end
+    else change set not empty
+      Disp ->> FeatTrig : on_change_set(change_set)
+    end
+  end
+end
+
+' ---------------------------------------------------------------------------------------------
+== 4. Feature pipeline (planned P2, SD-4) ==
+note over FeatTrig, VS : SD-4 sd4_feature_pipeline.md
+FeatTrig ->> Pipe : feature_engineering(change_set_id)
+Pipe -> Runs : get_change_set(id): ids + Lineage(data_md5, commits)
+par tombstoned ids
+  Pipe -> Cds : mark_deleted(ids)
+  Pipe -> VS : delete_by_document(ids)
+else inserted + changed ids
+  Pipe -> Raw : find(ids)
+  loop each RawDocument
+    Pipe -> Clean : clean(doc), check quality, mask secrets
+    alt low quality
+      Clean --> Pipe : quarantine reason
+    else ok
+      Clean --> Pipe : CleanedDocument
+    end
+  end
+  Pipe -> Pipe : DuplicateDetector.groups (content_hash + MinHash)
+  Pipe -> Cds : upsert(cleaned docs with Lineage)
+  Pipe -> Chunk : chunk(doc): owner_id, origin, topics, deterministic point ids
+  Pipe -> Emb : estimate_cost_usd(texts)
+  Pipe -> Budget : ensure(embedding, estimate, user)
+  alt over budget
+    Budget --> Pipe : BudgetExceededError (aborts before embedding)
+  else
+    Pipe -> Emb : embed(texts)
+    Pipe -> VS : upsert(chunks, vectors), delete stale point ids
+    Pipe -> Budget : charge(CostEntry)
+  end
+end
+Pipe --> FeatTrig : summary (processed, quarantined, upserts, deletes)
+
+' ---------------------------------------------------------------------------------------------
+== 5. Datasets, fine-tuning, evaluation and promotion (planned P3, SD-6) ==
+note over Owner, MReg : SD-6 sd6_datasets_training_eval.md. Started on demand by the owner.
+Owner -> GenP : generate_datasets(owner_id, cleaned_version)
+GenP -> Sel : select(OwnerScope.for_user(owner), style)
+Sel -> Scope : for_user(owner)
+Sel -> Cds : find(scope): style-eligible self + licensed external only
+Sel -> RegStore : exclusions, licences
+Sel --> GenP : documents + eligibility report
+GenP -> GenP : NerRedactor: redact third-party PII
+GenP -> Budget : ensure(dataset_generation, estimate)
+GenP -> Gen : generate(chunks): instruction + preference samples
+Gen -> LLM : generate(prompt)
+GenP -> Budget : charge(actual cost)
+GenP -> Gen : filter: dedup, length, judge faithfulness
+GenP -> GenP : split train/test by document
+GenP -> DStore : publish(DatasetVersion + card + Lineage) (immutable)
+DStore --> Owner : dataset@vN
+
+Owner -> TrainP : training(owner_id, dataset@vN, TrainingConfig)
+TrainP -> TrainP : DatasetQualityGate.check(min_samples, max_removal_rate)
+TrainP -> Scope : assert_all(sample owner_ids)
+alt gate or isolation check fails
+  TrainP --> Owner : refuse (no GPU time spent)
+else
+  TrainP -> Budget : ensure(training, max_usd)
+  TrainP -> Trainer : train(config, dataset, parent=None) SFT
+  Trainer -> GPU : submit, status (cancel at max_hours or max_usd)
+  GPU --> Trainer : adapter
+  Trainer -> MReg : register(ModelVersion sft, Lineage)
+  TrainP -> Trainer : train(config, preference dataset, parent=sft) DPO
+  Trainer -> MReg : register(ModelVersion dpo, parent sft)
+  TrainP -> Evals : evaluate(candidate twin, held-out split + EvalSet)
+  Evals -> Twin : answer(eval prompts) (candidate twin)
+  Evals -> LLM : judge(style, relevance, faithfulness, safety)
+  Evals --> TrainP : EvalReport (metrics with 95% CI)
+  TrainP -> Promo : decide(candidate report, production report)
+  alt passes every threshold
+    Promo -> MReg : tag(candidate, production)
+  else
+    Promo -> MReg : tag(candidate, staging)
+  end
+end
+
+' ---------------------------------------------------------------------------------------------
+== 6. RAG chat with the twin (planned P2, adapter from P3, SD-5) ==
+note over Consumer, Tracer : SD-5 sd5_rag_chat.md
+Consumer -> Api : POST /api/v1/twins/{user_id}/chat (query, history)
+Api -> Auth : authenticate(token): Principal
+Api -> Api : require_self(user_id), RateLimiter.allow
+alt over the rate limit
+  Api --> Consumer : 429
+else
+  Api -> Twin : answer(ChatRequest)
+  Twin -> Tracer : start(chat, user_id): trace_id
+  Twin -> Ret : retrieve(query, user_id)
+  Ret -> Ret : expand query, extract topic and kind filters
+  Ret -> Scope : VectorFilter.for_user (own + shared external, not deleted)
+  Ret -> Emb : embed(expanded queries)
+  Ret -> VS : search(vector, filter, k)
+  Ret -> Ret : cross-encoder rerank
+  Ret --> Twin : top-k ScoredChunks
+  alt every score below the relevance threshold
+    Twin --> Api : "I don't know", no citations
+  else
+    Twin -> Prompts : get(twin_answer): PromptTemplate (versioned)
+    Twin -> Res : client_for(user_id)
+    Res -> MReg : production adapter for the user
+    Res --> Twin : AdapterModelClient or BaseModelClient fallback
+    Twin -> Budget : ensure(inference, estimate, user_id)
+    alt daily cap reached
+      Budget --> Api : 503 budget_exhausted
+    else
+      Twin -> LLM : generate(prompt) or stream(prompt)
+      LLM --> Twin : Completion (text, tokens)
+      Twin -> Budget : charge(CostEntry with trace_id)
+      Twin -> Tracer : record(prompt version, chunk ids, model version, latency, cost)
+      Twin --> Api : ChatResponse(answer, sources, model_version, trace_id, ai_disclosure)
+    end
+  end
+  Api --> Consumer : 200 answer + citations + AI disclosure
+end
+opt feedback (P4)
+  Consumer -> Api : thumbs up/down on trace_id
+  Api -> Tracer : record_feedback(Feedback)
+end
+
+' ---------------------------------------------------------------------------------------------
+== 7. Account deletion (planned P4, SD-8) ==
+note over User, Taint : SD-8 sd8_account_deletion.md. Every store that holds user data is Purgeable.
+User -> Api : DELETE /api/v1/me (re-authenticated)
+Api -> DelSvc : delete_account(user_id)
+DelSvc -> RegStore : disable user (no new runs select their sources)
+critical purge every store by PurgeScope(owner_id=user)
+  DelSvc -> VS : purge(scope)
+  DelSvc -> Cds : purge(scope)
+  DelSvc -> Raw : purge(scope)
+  DelSvc -> DStore : purge(scope)
+  DelSvc -> MReg : purge(scope) (the user's adapters)
+  DelSvc -> Tracer : purge(scope)
+  DelSvc -> RegStore : purge(scope): subscriptions, owned sources, user record
+else a store fails
+  DelSvc -> DelSvc : DeletionLog incomplete, retry within 7 days
+end
+DelSvc -> Dvc : user partition removed from the next snapshot
+DelSvc -> Taint : on_deleted(document ids)
+Taint -> MReg : tag(shared models trained on them, tainted)
+DelSvc --> Api : DeletionLog completed
+Api --> User : 202 deletion completed or scheduled
+
+@enduml

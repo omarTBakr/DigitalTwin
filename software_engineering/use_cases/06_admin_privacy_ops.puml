@@ -1,0 +1,50 @@
+@startuml 06_admin_privacy_ops
+' Use cases 06: Administration, privacy and operations
+' PlantUML twin of the Mermaid diagram in 06_admin_privacy_ops.md; keep the two in sync.
+' Status comes from the use case's stories: implemented, partial, planned.
+
+title Use cases 06: Administration, privacy and operations
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor<<implemented>> #DCFCE7
+  BorderColor<<implemented>> #15803D
+  BackgroundColor<<partial>> #FEF9C3
+  BorderColor<<partial>> #A16207
+  BackgroundColor<<planned>> #F4F4F5
+  BorderColor<<planned>> #71717A
+  BorderStyle<<planned>> dashed
+}
+skinparam actor {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+}
+
+actor "Admin" as admin
+actor "Future user" as user
+actor "Owner" as owner
+rectangle "DigitalTwin: Administration, privacy and operations" {
+  usecase "UC-21\nAdminister the platform" as uc21 <<planned>>
+  usecase "UC-22\nExport my data" as uc22 <<planned>>
+  usecase "UC-23\nDelete my account" as uc23 <<planned>>
+  usecase "UC-24\nOperate and monitor the system" as uc24 <<planned>>
+}
+usecase "UC-03\nSign in and accept the terms" as uc03 <<planned>>
+
+admin -- uc21
+user -- uc22
+user -- uc23
+owner -- uc24
+uc21 ..> uc03 : <<include>>
+uc22 ..> uc03 : <<include>>
+uc23 ..> uc03 : <<include>>
+
+legend right
+  «implemented» all stories done
+  «partial» some stories done
+  «planned» all stories to do
+endlegend
+
+@enduml

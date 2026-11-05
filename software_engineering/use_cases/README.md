@@ -4,7 +4,7 @@
 |---|---|
 | Document status | v1.0, derived from [`user_stories.md`](../user_stories/user_stories.md) (96 stories) and [`requirements.md`](../requirements/requirements.md) v1.0 §1.5 (actors) |
 | Baseline | `main` at `4c40ca7` |
-| Notation | Use-case diagrams drawn as Mermaid `flowchart` (Mermaid has no use-case diagram type): actors are boxes marked `«actor»`, use cases are stadium shapes inside the system boundary, dotted arrows are `«include»` / `«extend»` |
+| Notation | Use-case diagrams drawn as Mermaid `flowchart` (Mermaid has no use-case diagram type): actors are boxes marked `«actor»`, use cases are stadium shapes inside the system boundary, dotted arrows are `«include»` / `«extend»`. Each `0N_*.md` has a native PlantUML use-case twin `0N_*.puml` next to it. |
 
 [← Hub](../README.md)
 

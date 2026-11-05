@@ -1,0 +1,52 @@
+@startuml 01_configure_and_register_sources
+' Use cases 01: Configure and register sources
+' PlantUML twin of the Mermaid diagram in 01_configure_and_register_sources.md; keep the two in sync.
+' Status comes from the use case's stories: implemented, partial, planned.
+
+title Use cases 01: Configure and register sources
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor<<implemented>> #DCFCE7
+  BorderColor<<implemented>> #15803D
+  BackgroundColor<<partial>> #FEF9C3
+  BorderColor<<partial>> #A16207
+  BackgroundColor<<planned>> #F4F4F5
+  BorderColor<<planned>> #71717A
+  BorderStyle<<planned>> dashed
+}
+skinparam actor {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+}
+
+actor "Owner" as owner
+actor "Future user" as user
+rectangle "DigitalTwin: Configure and register sources" {
+  usecase "UC-01\nDeclare topics and sources in YAML" as uc01 <<partial>>
+  usecase "UC-02\nCheck configuration and provider health" as uc02 <<implemented>>
+  usecase "UC-03\nSign in and accept the terms" as uc03 <<planned>>
+  usecase "UC-04\nRegister a source through the UI or API" as uc04 <<planned>>
+  usecase "UC-05\nManage subscriptions and see crawl status" as uc05 <<partial>>
+}
+actor "External platforms" as ext
+
+owner -- uc01
+owner -- uc02
+user -- uc03
+user -- uc04
+user -- uc05
+owner -- uc05
+uc02 -- ext
+uc04 -- ext
+uc04 ..> uc03 : <<include>>
+
+legend right
+  «implemented» all stories done
+  «partial» some stories done
+  «planned» all stories to do
+endlegend
+
+@enduml

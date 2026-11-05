@@ -1,0 +1,59 @@
+@startuml sd7_register_source_ui
+' SD-7. User registers a source in the UI (planned P4)
+' PlantUML twin of the Mermaid diagram in sd7_register_source_ui.md; keep the two in sync.
+' ->> is an asynchronous message (event, scheduled job, fire-and-forget), --> is a return.
+
+title SD-7. User registers a source in the UI (planned P4)
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+hide footbox
+
+autonumber
+  actor "User" as User
+  participant "ApiApp" as Api
+  participant "SessionAuthService" as Auth
+  participant "SourceRegistrationService" as Reg
+  participant "QuotaPolicy" as Quota
+  participant "source_spec_adapter" as Specs
+  participant "GitHubOAuthVerifier" as OAuth
+  participant "RegistryStore" as RegStore
+  participant "OnDemandCrawlService" as Crawl
+  participant "TriggerDispatcher" as Disp
+  User -> Api : POST /api/v1/sources {type: github, username}
+  Api -> Auth : authenticate(session)
+  alt no session, or no Consent for the current terms
+    Api --> User : 401 / redirect to consent
+  else
+    Api -> Reg : register(principal, payload)
+    Reg -> Quota : check(principal, add_source)
+    Reg -> Specs : validate(payload, context=topics)
+    alt invalid spec
+      Specs --> User : 422 with field-level messages
+    else valid spec
+      opt owned source type (GitHub)
+        Reg -> OAuth : verify_owner(token, username)
+        OAuth --> Reg : login matches?
+      end
+      Reg -> RegStore : upsert_source(source, declared_via=ui) (atomic: owner never changes)
+      alt owned by another user
+        RegStore --> User : 409 OwnershipConflictError
+      else new or existing canonical source
+        Reg -> RegStore : subscribe(user, source), merge topics (REG-013)
+        Reg --> User : 201 subscription ("already tracked, last crawled ..." if it existed)
+      end
+    end
+  end
+  opt user clicks "crawl now"
+    User -> Api : POST /api/v1/crawls {source_ids}
+    Api -> Crawl : trigger(principal, source_ids)
+    Crawl -> Quota : check(principal, crawl) (1 per source per hour)
+    Crawl ->> Disp : dispatch(TriggerBatch kind manual) (SD-3 from the lock step)
+    Crawl --> User : 202 run id
+  end
+  User -> Api : GET /api/v1/subscriptions
+  Api -> Reg : list_subscriptions(principal)
+  Reg -> RegStore : subscriptions + sources.state
+  Api --> User : status, last crawl, last success, errors
+
+@enduml

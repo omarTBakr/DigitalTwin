@@ -1,0 +1,66 @@
+@startuml sd2_medium_extraction
+' SD-2. Medium extraction inside a crawl step (implemented)
+' PlantUML twin of the Mermaid diagram in sd2_medium_extraction.md; keep the two in sync.
+' ->> is an asynchronous message (event, scheduled job, fire-and-forget), --> is a return.
+
+title SD-2. Medium extraction inside a crawl step (implemented)
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+hide footbox
+
+autonumber
+  participant "crawl_provider" as Crawl
+  participant "MediumExtractor" as Ext
+  participant "MediumFeedClient" as Feeds
+  participant "MediumListingPage" as Listing
+  participant "Browser (Selenium)" as Browser
+  participant "medium.com" as Medium
+  Crawl -> Ext : extract()
+  Ext -> Ext : session(): counts = context.topic_counts(), known topics per doc
+  Ext -> Feeds : open (pacing feed_delay_s, backoff on 429/5xx)
+  opt any medium_tag source selected
+    Ext -> Browser : open profile (headed or headless)
+  end
+  note over Ext : medium_tag source
+  Ext -> Ext : all topics at cap? then skipped, next source
+  alt browser available and not blocked
+    Ext -> Listing : collect(tag listing_url, limit = missing x 2)
+    Listing -> Browser : open(url) then wheel scroll_down with pauses
+    Browser -> Medium : GET /tag/~<tag>/recommended
+    alt bot challenge does not clear
+      Browser --> Ext : AccessBlockedError
+      Ext -> Ext : listing_blocked = true (no browser for the rest of the run)
+      Ext -> Feeds : tag_feed(tag)
+      Feeds -> Medium : GET /feed/tag/~<tag>
+    else page loads
+      Listing --> Ext : article links
+    end
+  else
+    Ext -> Feeds : tag_feed(tag)
+    Feeds -> Medium : GET /feed/tag/~<tag>
+  end
+  loop each discovered link (until topics at cap)
+    Ext -> Ext : feed_url_for_article(url) (author or publication feed)
+    Ext -> Feeds : entries(feed_url) (cached per run)
+    Feeds -> Medium : GET /feed/@author
+    alt article not in the feed (older than ~10 posts)
+      Ext -> Ext : record_skipped(not in feed)
+    else found
+      Ext -> Ext : _accept: duplicate? member-only? topics at cap?
+      Ext --> Crawl : RawDocument (origin external, crawler medium_rss)
+    end
+  end
+  note over Ext, Feeds : planned MED-005: RateLimitError stops the provider here, Retry-After honoured
+  note over Ext, Browser : planned MED-008: unattended runs never start the browser
+  note over Ext : medium_author source
+  Ext -> Feeds : author_feed(@handle)
+  Feeds -> Medium : GET /feed/@handle
+  loop each entry
+    Ext -> Ext : _accept (free posts have full text, member-only skipped)
+    Ext --> Crawl : RawDocument
+  end
+  Ext -> Browser : quit (session exit)
+  Ext -> Feeds : close
+
+@enduml

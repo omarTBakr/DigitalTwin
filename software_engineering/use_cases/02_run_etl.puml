@@ -1,0 +1,58 @@
+@startuml 02_run_etl
+' Use cases 02: Run the ETL
+' PlantUML twin of the Mermaid diagram in 02_run_etl.md; keep the two in sync.
+' Status comes from the use case's stories: implemented, partial, planned.
+
+title Use cases 02: Run the ETL
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor<<implemented>> #DCFCE7
+  BorderColor<<implemented>> #15803D
+  BackgroundColor<<partial>> #FEF9C3
+  BorderColor<<partial>> #A16207
+  BackgroundColor<<planned>> #F4F4F5
+  BorderColor<<planned>> #71717A
+  BorderStyle<<planned>> dashed
+}
+skinparam actor {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+}
+
+actor "Owner" as owner
+actor "Pipeline orchestrator (ZenML)" as zenml
+actor "Future user" as user
+rectangle "DigitalTwin: Run the ETL" {
+  usecase "UC-06\nRun the ETL pipeline" as uc06 <<partial>>
+  usecase "UC-07\nExtract content from a provider" as uc07 <<partial>>
+  usecase "UC-08\nDetect changes and deletions upstream" as uc08 <<partial>>
+  usecase "UC-09\nUpload a LinkedIn export or Obsidian vault" as uc09 <<planned>>
+  usecase "UC-10\nRestore a raw-data snapshot" as uc10 <<planned>>
+}
+usecase "UC-03\nSign in and accept the terms" as uc03 <<planned>>
+usecase "UC-13\nCrawl my sources on demand" as uc13 <<planned>>
+actor "External platforms" as ext
+
+owner -- uc06
+zenml -- uc07
+zenml -- uc08
+user -- uc09
+owner -- uc10
+uc06 -- zenml
+uc07 -- ext
+uc08 -- ext
+uc06 ..> uc07 : <<include>>
+uc08 ..> uc07 : <<extend>>
+uc09 ..> uc03 : <<include>>
+uc09 ..> uc13 : <<include>>
+
+legend right
+  «implemented» all stories done
+  «partial» some stories done
+  «planned» all stories to do
+endlegend
+
+@enduml

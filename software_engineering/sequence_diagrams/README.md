@@ -4,7 +4,7 @@
 |---|---|
 | Document status | v1.0, written after [`requirements.md`](../requirements/requirements.md) v1.0, [`user_stories.md`](../user_stories/user_stories.md) and [`class_diagram.md`](../class_diagrams/README.md) v1.0 were finalized |
 | Baseline | `main` at `4c40ca7`. Implemented flows were read from the code; nothing was run. |
-| Notation | Mermaid `sequenceDiagram`. All diagrams render with mermaid-cli 11.x. |
+| Notation | Mermaid `sequenceDiagram`. All diagrams render with mermaid-cli 11.x. Each `sdN_*.md` has a PlantUML twin `sdN_*.puml` next to it (same participants and messages). |
 
 [← Hub](../README.md)
 
@@ -17,6 +17,8 @@
 - `FR-` is left out of requirement IDs in notes (`ETL-012` means FR-ETL-012).
 
 ## Index
+
+**Whole system on one diagram:** [`system_sequence_diagram.puml`](system_sequence_diagram.puml) (PlantUML, about 170 steps) runs every flow in order, from source registration to account deletion, at class level. It is built from SD-1 to SD-8; the files below keep the full detail.
 
 | # | Flow | Status | Requirements | Use cases | Class diagrams |
 |---|---|---|---|---|---|

@@ -1,0 +1,52 @@
+@startuml 04_rag_chat_and_features
+' Use cases 04: Search index and RAG chat
+' PlantUML twin of the Mermaid diagram in 04_rag_chat_and_features.md; keep the two in sync.
+' Status comes from the use case's stories: implemented, partial, planned.
+
+title Use cases 04: Search index and RAG chat
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor<<implemented>> #DCFCE7
+  BorderColor<<implemented>> #15803D
+  BackgroundColor<<partial>> #FEF9C3
+  BorderColor<<partial>> #A16207
+  BackgroundColor<<planned>> #F4F4F5
+  BorderColor<<planned>> #71717A
+  BorderStyle<<planned>> dashed
+}
+skinparam actor {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+}
+
+actor "Pipeline orchestrator (ZenML)" as zenml
+actor "Future user" as user
+actor "Owner" as owner
+actor "Twin consumer" as consumer
+rectangle "DigitalTwin: Search index and RAG chat" {
+  usecase "UC-14\nBuild and update the search index" as uc14 <<planned>>
+  usecase "UC-15\nExclude or forget content" as uc15 <<planned>>
+  usecase "UC-16\nChat with the twin" as uc16 <<partial>>
+  usecase "UC-17\nGive feedback on an answer" as uc17 <<planned>>
+}
+actor "LLM and GPU providers" as llm
+
+zenml -- uc14
+user -- uc15
+owner -- uc15
+consumer -- uc16
+consumer -- uc17
+uc14 -- llm
+uc16 -- llm
+uc17 ..> uc16 : <<extend>>
+
+legend right
+  «implemented» all stories done
+  «partial» some stories done
+  «planned» all stories to do
+endlegend
+
+@enduml

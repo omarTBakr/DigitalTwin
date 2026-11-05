@@ -1,0 +1,50 @@
+@startuml 05_datasets_training_eval
+' Use cases 05: Datasets, training and evaluation
+' PlantUML twin of the Mermaid diagram in 05_datasets_training_eval.md; keep the two in sync.
+' Status comes from the use case's stories: implemented, partial, planned.
+
+title Use cases 05: Datasets, training and evaluation
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor<<implemented>> #DCFCE7
+  BorderColor<<implemented>> #15803D
+  BackgroundColor<<partial>> #FEF9C3
+  BorderColor<<partial>> #A16207
+  BackgroundColor<<planned>> #F4F4F5
+  BorderColor<<planned>> #71717A
+  BorderStyle<<planned>> dashed
+}
+skinparam actor {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+}
+
+actor "Owner" as owner
+rectangle "DigitalTwin: Datasets, training and evaluation" {
+  usecase "UC-18\nGenerate training datasets" as uc18 <<planned>>
+  usecase "UC-19\nFine-tune and register a twin model" as uc19 <<planned>>
+  usecase "UC-20\nEvaluate and promote a model" as uc20 <<planned>>
+}
+actor "Pipeline orchestrator (ZenML)" as zenml
+actor "LLM and GPU providers" as llm
+
+owner -- uc18
+owner -- uc19
+owner -- uc20
+uc18 -- zenml
+uc18 -- llm
+uc19 -- zenml
+uc19 -- llm
+uc20 -- llm
+uc19 ..> uc20 : <<include>>
+
+legend right
+  «implemented» all stories done
+  «partial» some stories done
+  «planned» all stories to do
+endlegend
+
+@enduml

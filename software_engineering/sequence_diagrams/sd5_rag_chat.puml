@@ -1,0 +1,74 @@
+@startuml sd5_rag_chat
+' SD-5. RAG chat request (planned P2, adapter from P3)
+' PlantUML twin of the Mermaid diagram in sd5_rag_chat.md; keep the two in sync.
+' ->> is an asynchronous message (event, scheduled job, fire-and-forget), --> is a return.
+
+title SD-5. RAG chat request (planned P2, adapter from P3)
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+hide footbox
+
+autonumber
+  actor "Twin consumer" as Consumer
+  participant "ApiApp" as Api
+  participant "AuthService" as Auth
+  participant "RateLimiter" as Rate
+  participant "TwinService" as Twin
+  participant "Tracer" as Tracer
+  participant "Retriever" as Ret
+  participant "QueryExpander" as QE
+  participant "SelfQueryExtractor" as SQ
+  participant "Embedder" as Emb
+  participant "VectorStore" as VS
+  participant "CrossEncoderReranker" as Rr
+  participant "PromptRegistry" as Prompts
+  participant "ModelResolver" as Res
+  participant "BudgetGuard" as Budget
+  participant "LLMClient" as LLM
+  Consumer -> Api : POST /api/v1/twins/{user_id}/chat (query, history)
+  Api -> Auth : authenticate(token)
+  Auth --> Api : Principal (P2 static bearer token, P4 per-user session)
+  Api -> Api : principal.require_self(user_id) (403 otherwise, P4)
+  Api -> Rate : allow(user, limit, window)
+  alt over the rate limit
+    Api --> Consumer : 429
+  else
+    Api -> Twin : answer(ChatRequest)
+    Twin -> Tracer : start(chat, user_id): trace_id
+    Twin -> Ret : retrieve(query, user_id)
+    Ret -> QE : expand(query)
+    Ret -> SQ : extract(query): topic and kind filters
+    Ret -> Ret : VectorFilter.for_user(user_id) via OwnerScope (own + shared external, not deleted)
+    Ret -> Emb : embed(expanded queries)
+    Ret -> VS : search(vector, filter, k)
+    Ret -> Rr : rerank(query, chunks, k)
+    Ret --> Twin : top-k ScoredChunks
+    alt every score below the relevance threshold
+      Twin --> Api : "I don't know" answer, no citations (INF-007)
+    else
+      Twin -> Prompts : get(twin_answer): PromptTemplate (versioned)
+      Twin -> Twin : render(query, history, chunks as untrusted context)
+      Twin -> Res : client_for(user_id)
+      Res --> Twin : AdapterModelClient (production tag) or BaseModelClient fallback
+      Twin -> LLM : estimate_cost_usd(prompt, max_tokens)
+      Twin -> Budget : ensure(inference, estimate, user_id)
+      alt daily cap reached
+        Budget --> Api : 503 budget_exhausted
+      else
+        Twin -> LLM : generate(prompt) or stream(prompt)
+        LLM --> Twin : Completion (text, tokens)
+        Twin -> Budget : charge(CostEntry with user_id, trace_id)
+        Twin -> Twin : keep only citations of retrieved chunks
+        Twin -> Tracer : record(Trace: prompt version, chunk ids, model version, latency, tokens, cost)
+        Twin --> Api : ChatResponse(answer, sources, model_version, trace_id, ai_disclosure)
+      end
+    end
+    Api --> Consumer : 200 answer + citations + AI disclosure
+  end
+  opt feedback (P4)
+    Consumer -> Api : thumbs up/down on trace_id
+    Api -> Tracer : record_feedback(Feedback)
+  end
+
+@enduml

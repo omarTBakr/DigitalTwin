@@ -1,0 +1,70 @@
+@startuml sd3_trigger_incremental_etl
+' SD-3. Trigger to targeted, incremental ETL run (planned P1)
+' PlantUML twin of the Mermaid diagram in sd3_trigger_incremental_etl.md; keep the two in sync.
+' ->> is an asynchronous message (event, scheduled job, fire-and-forget), --> is a return.
+
+title SD-3. Trigger to targeted, incremental ETL run (planned P1)
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+hide footbox
+
+autonumber
+  participant "Scheduler" as Sched
+  participant "GitHubPushPoller" as Poller
+  participant "TriggerEventStore" as Events
+  participant "Coalescer" as Coal
+  participant "BackoffGate" as Gate
+  participant "TriggerDispatcher" as Disp
+  participant "LockManager" as Locks
+  participant "digital_data_etl" as ETL
+  participant "GitHubExtractor" as Ext
+  participant "RawDataStore" as Store
+  participant "RegistryStore" as RegStore
+  participant "RunRecordStore" as Runs
+  participant "FeatureRunTrigger" as FeatTrig
+  participant "Alerter" as Alert
+  loop every polling interval (default 15 min)
+    Sched ->> Poller : poll(now)
+    Poller -> RegStore : source state cursor (pushed_at per repo)
+    Poller --> Events : append(TriggerEvent kind poll, source github:user:x)
+  end
+  Sched ->> Events : due(now): scheduled events per provider cadence
+  Coal -> Events : pending()
+  Coal -> Coal : add(event), flush(now): one TriggerBatch per source per window
+  Coal -> Gate : allowed(source_id, now)
+  alt retry_not_before in the future (rate limit or blocked cool-down)
+    Gate --> Events : update(event status deferred)
+  else allowed
+    Coal -> Disp : dispatch(batch)
+    Disp -> Locks : acquire(source key, run id, ttl)
+    alt lock held by another run
+      Locks --> Disp : None
+      Disp --> Events : update(event status skipped locked)
+    else lease granted
+      Disp ->> ETL : run(source_ids, RunOptions interactive=false, trigger=poll)
+      ETL -> Ext : extract() with CrawlContext(cursors, fingerprints from Store, exclusions)
+      Ext -> Ext : repo pushed_at unchanged? skipped unchanged
+      Ext -> Ext : blob SHA unchanged? skipped unchanged (no download)
+      Ext --> ETL : changed documents + EnumerationResult(complete, seen ids)
+      ETL -> Store : upsert_many: UpsertStats(inserted, changed, unchanged)
+      opt enumeration complete (tree not truncated)
+        ETL -> Store : tombstone(EnumerationResult.missing())
+      end
+      ETL -> RegStore : record_state: last_success_at, cursor, consecutive_failures, retry_not_before
+      ETL -> Runs : save(RunRecord), save_change_set(ChangeSet: inserted, changed, tombstoned)
+      ETL -> Locks : release(lease)
+      ETL --> Disp : run status
+      Disp -> Events : update(event, coalesced_into_run, status)
+      alt run failed
+        Disp -> Gate : next_attempt_at(event) (bounded backoff, max_attempts 3)
+        opt consecutive_failures reaches 3 or attempts exhausted
+          Disp -> Alert : fire(source failing, last error)
+        end
+      else change set not empty
+        Disp ->> FeatTrig : on_change_set(change_set) (SD-4)
+      end
+    end
+  end
+
+@enduml
